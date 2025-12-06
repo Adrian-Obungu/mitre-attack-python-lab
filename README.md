@@ -155,3 +155,5 @@ This repository contains tools designed for security research and educational pu
 This project is maintained by **Adrian S. Obungu**.
 
 [GitHub Profile](https://github.com/adrian-obungu-soft) | [LinkedIn](https://www.linkedin.com/in/adrianobungu/)
+
+Repository Topics: cybersecurity, python, mitre-attack, reconnaissance, honeypot, dns, port-scanning, security-tools, active-defense, threat-intelligence
