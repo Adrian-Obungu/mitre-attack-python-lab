@@ -1,0 +1,30 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.banditEnabled": true,
+    "python.formatting.provider": "black",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": ["tests/"],
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "venv": true,
+        ".pytest_cache": true
+    },
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true
+}

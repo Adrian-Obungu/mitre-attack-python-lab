@@ -1,0 +1,27 @@
+# Core Dependencies
+scapy>=2.5.0
+dnslib>=0.9.19
+dnspython>=2.4.2
+google-generativeai>=0.3.0
+
+# Development
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.6.0
+
+# Documentation & Analysis
+jupyter>=1.0.0
+matplotlib>=3.7.0
+pandas>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
+colorama>=0.4.6
+tabulate>=0.9.0
+rich>=13.0.0
+
+# Security Tools
+bandit>=1.7.5
+safety>=2.3.0
