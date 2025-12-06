@@ -154,4 +154,4 @@ This repository contains tools designed for security research and educational pu
 
 This project is maintained by **Adrian S. Obungu**.
 
-[GitHub Profile]([https://github.com/adrian-obungu-soft](https://github.com/Adrian-Obungu)) | [LinkedIn]([https://www.linkedin.com/in/adrianobungu/](https://www.linkedin.com/in/adrian-o-9b4856260/))
+[GitHub Profile](https://github.com/Adrian-Obungu) | [LinkedIn](https://www.linkedin.com/in/adrian-o-9b4856260/)
