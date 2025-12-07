@@ -1,0 +1,4 @@
+2024-01-15 10:30:22 | 192.168.1.100 | A | admin.example.com | 10.0.1.1 (fake_unique)
+2024-01-15 10:30:23 | 192.168.1.100 | MX | vpn.example.com | mail.example.com.
+2024-01-15 10:30:24 | 192.168.1.100 | A | www.example.com | 93.184.216.34 (real)
+2024-01-15 10:30:25 | 192.168.1.101 | A | test.example.com | 10.0.2.45 (fake_generated)
