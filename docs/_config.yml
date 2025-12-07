@@ -1,4 +1,4 @@
-title: "MITRE ATT&CK Python Lab"
-description: "Documentation for cybersecurity project"
-theme: jekyll-theme-minimal
+title: MITRE ATT&CK Python Lab
+description: Cybersecurity project implementing reconnaissance techniques
 baseurl: /mitre-attack-python-lab
+theme: jekyll-theme-cayman
