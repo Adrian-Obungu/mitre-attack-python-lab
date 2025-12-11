@@ -1,0 +1,4 @@
+2025-12-11 15:58:33,171 - INFO - Starting DNS reconnaissance for example.com with wordlist C:\Users\Adrian Obu\mitre-attack-python-lab\wordlist.txt using 20 threads.
+2025-12-11 15:58:33,890 - INFO - Resolved www.example.com -> 172.66.144.113
+2025-12-11 15:58:44,643 - INFO - Scan completed in 11.46 seconds. Found 1 unique IP addresses.
+2025-12-11 15:59:00,611 - WARNING - No reverse DNS record found for 172.66.144.113

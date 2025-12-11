@@ -1,0 +1,2 @@
+- Security scanning with Bandit
+- Security scanning with Bandit

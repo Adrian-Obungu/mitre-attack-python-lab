@@ -1,0 +1,16 @@
+{
+    "fake_subdomain_query": 50,
+    "high_query_volume_threshold": 100,
+    "high_query_volume_score": 20,
+    "suspicious_qtype_query": 10,
+    "admin_query": 75,
+    "vpn_query": 60,
+    "internal_query": 60,
+    "db_query": 50,
+    "sql_query": 50,
+    "secret_query": 75,
+    "private_query": 75,
+    "backup_query": 40,
+    "remote_query": 30,
+    "cname_to_fake": 30
+}
