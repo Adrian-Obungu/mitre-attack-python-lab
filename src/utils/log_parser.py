@@ -248,23 +248,30 @@ def validate_log_file_path(log_file_path: str) -> Optional[str]:
     """
     # Get the absolute path of the project root
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    logs_dir = os.path.join(project_root, 'logs')
     
-    # Resolve the absolute path of the user-provided path
-    user_path = os.path.abspath(os.path.join(logs_dir, log_file_path))
+    # Define the expected logs directory absolute path
+    expected_logs_dir = os.path.join(project_root, 'logs')
+    
+    # Resolve the user-provided path relative to the project root
+    # This assumes log_file_path is relative to the project root, e.g., "logs/honeyresolver.log"
+    resolved_full_path = os.path.abspath(os.path.join(project_root, log_file_path))
 
-    # Security Check: Ensure the resolved path is within the logs directory
-    if not user_path.startswith(logs_dir):
+    # Security Check: Ensure the resolved path is within the expected_logs_dir
+    # This checks for path traversal both by checking the prefix and common prefix
+    # The startswith(os.path.join(expected_logs_dir, '')) handles cases where
+    # expected_logs_dir is a prefix of another valid directory, e.g., /a/b vs /a/bc
+    if not resolved_full_path.startswith(os.path.join(expected_logs_dir, os.sep)) and \
+       not (resolved_full_path == expected_logs_dir and os.path.isdir(resolved_full_path)):
         logger.warning("Path traversal attempt blocked.", extra={
             'attempted_path': log_file_path,
-            'resolved_path': user_path,
-            'allowed_directory': logs_dir
+            'resolved_path': resolved_full_path,
+            'allowed_directory': expected_logs_dir
         })
         return None
         
-    if os.path.exists(user_path) and os.path.isfile(user_path):
-        return user_path
-        
+    if os.path.exists(resolved_full_path) and os.path.isfile(resolved_full_path):
+        return resolved_full_path
+            
     return None
 
 def main():
