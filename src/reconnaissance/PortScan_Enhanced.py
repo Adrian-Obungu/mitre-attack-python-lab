@@ -16,15 +16,21 @@ import argparse
 import logging
 import random
 import sys
+import os
+import re
+import ctypes
 from typing import Dict, List, Optional, Tuple
 
-from scapy.all import IP, TCP, sr1
+from scapy.all import IP, TCP, sr1, conf
 from dns import resolver, exception
 
 # --- Configuration ---
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, handlers=[logging.FileHandler("port_scan_enhanced.log"), logging.StreamHandler()])
 logger = logging.getLogger(__name__)
+
+# Suppress scapy's verbose output
+conf.verb = 0
 
 # --- Safety Warning ---
 SAFETY_WARNING = """
@@ -34,6 +40,44 @@ Unauthorized scanning of networks is illegal. The user assumes all responsibilit
 for any unauthorized or malicious use of this script. Always obtain explicit,
 written permission from the network owner before scanning.
 """
+
+# --- Security and Validation Functions ---
+
+def is_admin():
+    """Check for administrator privileges."""
+    try:
+        if os.name == 'nt':
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        else:
+            return os.geteuid() == 0
+    except Exception:
+        return False
+
+def validate_target(target):
+    """Validate the target to be a valid IP address or hostname."""
+    ip_pattern = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+    hostname_pattern = re.compile(r"^[a-zA-Z0-9.-]+$")
+    if ip_pattern.match(target) or hostname_pattern.match(target):
+        return True
+    return False
+
+def validate_and_parse_ports(ports_str: str) -> Optional[List[int]]:
+    """Validate and parse port strings (e.g., '80,443' or '1-1024')."""
+    ports_to_scan = set()
+    try:
+        if "-" in ports_str:
+            start, end = map(int, ports_str.split("-"))
+            if not (1 <= start <= end <= 65535):
+                return None
+            ports_to_scan.update(range(start, end + 1))
+        else:
+            ports = [int(p) for p in ports_str.split(",")]
+            if not all(1 <= p <= 65535 for p in ports):
+                return None
+            ports_to_scan.update(ports)
+        return sorted(list(ports_to_scan))
+    except ValueError:
+        return None
 
 class PortScanner:
     """A class for conducting various types of network port scans."""
@@ -70,7 +114,6 @@ class PortScanner:
                     results[port] = "Filtered"
                 elif response.haslayer(TCP):
                     if response.getlayer(TCP).flags == 0x12:  # SYN/ACK
-                        # Send RST to gracefully close the connection
                         sr1(IP(dst=self.target_ip) / TCP(sport=src_port, dport=port, flags="R"), timeout=self.timeout, verbose=0)
                         results[port] = "Open"
                     elif response.getlayer(TCP).flags == 0x14:  # RST/ACK
@@ -146,12 +189,6 @@ class PortScanner:
         """
         Performs DNS reconnaissance to gather various record types.
         MITRE ATT&CK: T1590.002 (Gather Victim Host Information: DNS)
-        
-        Args:
-            target_domain: The domain name to query.
-
-        Returns:
-            A dictionary of DNS records.
         """
         logger.info(f"Starting DNS scan for domain: {target_domain}")
         results = {}
@@ -193,20 +230,25 @@ def run_demo():
     
     logger.info(f"Targeting: {demo_target}")
     
+    # Non-privileged scans for demo
     scanner = PortScanner(demo_target, demo_ports)
-    
-    scanner.syn_scan()
     scanner.ack_scan()
-    scanner.xmas_scan()
     PortScanner.dns_scan(demo_target)
     
+    # Privileged scan check
+    if is_admin():
+        scanner.syn_scan()
+        scanner.xmas_scan()
+    else:
+        logger.warning("SYN and XMAS scans require administrator privileges. Skipping in demo mode.")
+        
     logger.info("=== Demo Mode Finished ===")
 
 def main():
     """Main function to parse arguments and initiate scans."""
     print(SAFETY_WARNING)
     
-    parser = argparse.ArgumentParser(description="Advanced Port Scanner")
+    parser = argparse.ArgumentParser(description="Advanced Port Scanner with security enhancements.")
     parser.add_argument("target", nargs="?", help="The target IP address or domain name.")
     parser.add_argument("-p", "--ports", default="1-1024", help="Ports to scan (e.g., 80,443 or 1-1024).")
     parser.add_argument("-t", "--type", required=True, choices=["syn", "ack", "xmas", "dns"], help="Type of scan to perform.")
@@ -218,21 +260,28 @@ def main():
         run_demo()
         sys.exit(0)
 
+    # --- Input Validation ---
     if not args.target:
-        logger.error("Target IP or domain is required unless in demo mode.")
+        logger.critical("Target IP or domain is required unless in demo mode.")
         parser.print_help()
         sys.exit(1)
 
-    # Parse ports
-    try:
-        if "-" in args.ports:
-            start, end = map(int, args.ports.split("-"))
-            ports_to_scan = list(range(start, end + 1))
-        else:
-            ports_to_scan = [int(p) for p in args.ports.split(",")]
-    except ValueError:
-        logger.error("Invalid port format. Use '80,443' or '1-1024'.")
-        sys.exit(1)
+    if not validate_target(args.target):
+        logger.critical(f"Invalid target specified: {args.target}")
+        sys.exit("Error: Invalid target. Please provide a valid IP address or hostname.")
+
+    ports_to_scan = validate_and_parse_ports(args.ports)
+    if ports_to_scan is None:
+        logger.critical(f"Invalid port format or range: {args.ports}")
+        sys.exit("Error: Invalid port format. Use '80,443' or '1-1024' with ports between 1 and 65535.")
+
+    # --- Privilege Check ---
+    privileged_scans = {"syn", "xmas"}
+    if args.type in privileged_scans and not is_admin():
+        logger.critical(f"'{args.type}' scan requires administrator privileges.")
+        sys.exit(f"Error: '{args.type}' scan must be run with administrator privileges.")
+    
+    logger.info(f"Starting {args.type} scan on {args.target} for ports: {args.ports}")
 
     if args.type == "dns":
         PortScanner.dns_scan(args.target)

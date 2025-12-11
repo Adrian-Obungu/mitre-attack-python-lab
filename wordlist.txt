@@ -1,0 +1,13 @@
+www
+mail
+ftp
+localhost
+test
+dev
+admin
+api
+staging
+vpn
+portal
+remote
+autodiscover

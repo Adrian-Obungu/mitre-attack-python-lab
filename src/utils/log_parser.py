@@ -23,53 +23,83 @@ import sys
 import time
 
 # --- Configuration ---
-DEFAULT_LOG_FILE = "honeyresolver.log" # Assumes log file is in the same directory as this parser, or specify full path
+DEFAULT_LOG_FILE = "logs/honeyresolver.log" # Assumes log file is in the 'logs' directory
 
-# Threat scoring based on query patterns
-# These scores are indicative and can be adjusted based on desired sensitivity
-THREAT_SCORES = {
-    "fake_subdomain_query": 50, # High score for querying explicit honeypot domains
-    "high_query_volume_threshold": 100, # Threshold for flagging high volume
-    "high_query_volume_score": 20, # Score for exceeding volume threshold
-    "suspicious_qtype_query": 10,
-    "admin_query": 75,
-    "vpn_query": 60,
-    "internal_query": 60,
-    "db_query": 50,
-    "sql_query": 50,
-    "secret_query": 75,
-    "private_query": 75,
-    "backup_query": 40,
-    "remote_query": 30,
-    "cname_to_fake": 30, # Querying a CNAME that resolves to a fake honeypot
-}
+def load_threat_scores():
+    """Loads threat scores from an external JSON file."""
+    try:
+        config_path = os.environ.get("THREAT_SCORES_CONFIG", os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'threat_scores.json'))
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.critical("Error loading threat scores configuration.", extra={'error': str(e)})
+        return {}
+
+THREAT_SCORES = load_threat_scores()
+
+# --- Structured JSON Logging ---
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+            "process_id": record.process,
+            "thread_id": record.thread,
+            "filename": record.filename,
+            "lineno": record.lineno,
+        }
+        # Add custom fields if they exist
+        if hasattr(record, 'client_ip'):
+            log_record['client_ip'] = record.client_ip
+        if hasattr(record, 'qname'):
+            log_record['qname'] = record.qname
+        if hasattr(record, 'qtype'):
+            log_record['qtype'] = record.qtype
+        if hasattr(record, 'resolved_path'):
+            log_record['resolved_path'] = record.resolved_path
+        if hasattr(record, 'allowed_directory'):
+            log_record['allowed_directory'] = record.allowed_directory
+            
+        # Add any extra dictionary values passed
+        if isinstance(record.msg, dict):
+            log_record.update(record.msg)
+            log_record["message"] = record.msg.get("message", record.getMessage())
+
+        return json.dumps(log_record)
 
 # Setup basic logging for the parser itself
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-# Prevent duplicate handlers if this module is imported multiple times
-if not logger.handlers:
-    console_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+
+# Clear existing handlers
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+# Add a StreamHandler with JSON formatter
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(JsonFormatter())
+logger.addHandler(console_handler)
 
 class LogParser:
     """
     Parses DNS honeypot logs, extracts statistics, and calculates threat scores.
     """
-    def __init__(self, log_file_path: str):
+    def __init__(self, log_file_path: str, threat_scores: Dict):
         """
-        Initializes the LogParser with the path to the log file.
-
-        Args:
-            log_file_path: The path to the honeyresolver log file.
+        Initializes the LogParser with the path to the log file and threat scores.
         """
         self.log_file_path = log_file_path
+        self.threat_scores = threat_scores
         self.parsed_entries: List[Dict[str, Any]] = []
         self.query_stats = defaultdict(lambda: defaultdict(int)) # {client_ip: {qtype: count, qname: count, score: int}}
         self.total_queries = 0
         self.top_queried_domains = Counter()
+
+    def _get_threat_score(self, key: str, default: int = 0) -> int:
+        """Safely retrieves a threat score from the configuration."""
+        return self.threat_scores.get(key, default)
 
     def parse_logs(self):
         """
@@ -88,45 +118,30 @@ class LogParser:
     def _parse_log_line(self, line: str):
         """
         Parses a single log line and extracts relevant information.
+        This version uses a specific regex to avoid ReDoS vulnerabilities.
         """
-        # Example log line: "2025-12-06 03:05:00,123 - INFO - DNS Query: Client 192.168.1.1 requested 'www.example.com.' (A)"
-        # Or: "2025-12-06 03:05:00,123 - WARNING - HONEYPOT HIT: Client 192.168.1.1 queried for fake subdomain 'admin.example.com' (A)"
-        match = re.search(
-            r"Client (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*(HONEYPOT HIT:|DNS Query:|DYNAMIC HONEYPOT:).*'([^']+?)' (\(\w+\))",
-            line
+        # This regex is tailored to the log format from HoneyResolver_Enhanced.py
+        # Format: Query from {client_ip}: '{sanitized_qname}' (Type: {qtype}) -> {response_ip} ({category})
+        log_pattern = re.compile(
+            r"Query from\s+([^:]+):\s+'([^']*)'\s+\(Type:\s+(\w+)\)\s+->\s+[^\s]+\s+\((real|fake|random)\)"
         )
+        match = log_pattern.search(line)
+
         if match:
             client_ip = match.group(1)
-            log_type = match.group(2).strip(':')
-            qname = match.group(3).lower().strip('.')
-            qtype = match.group(4).strip('()') # Strip parentheses from QTYPE
+            qname = match.group(2).lower().strip('.')
+            qtype = match.group(3)
+            category = match.group(4)
 
             entry = {
                 "client_ip": client_ip,
                 "qname": qname,
                 "qtype": qtype,
-                "is_honeypot_hit": "HONEYPOT" in log_type
+                # A honeypot hit is now determined by the 'category' in the log
+                "is_honeypot_hit": category in ['fake', 'random']
             }
             self.parsed_entries.append(entry)
             self._update_statistics(entry)
-        else:
-            # Catch dynamic honeypot logs or other relevant lines
-            dynamic_match = re.search(
-                r"DYNAMIC HONEYPOT: Client (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*queried for unknown subdomain '([^']+?)'",
-                line
-            )
-            if dynamic_match:
-                client_ip = dynamic_match.group(1)
-                qname = dynamic_match.group(2).lower().strip('.')
-                entry = {
-                    "client_ip": client_ip,
-                    "qname": qname,
-                    "qtype": "A", # Dynamic honeypots typically for A records
-                    "is_honeypot_hit": True,
-                    "is_dynamic": True
-                }
-                self.parsed_entries.append(entry)
-                self._update_statistics(entry)
 
 
     def _update_statistics(self, entry: Dict[str, Any]):
@@ -136,66 +151,65 @@ class LogParser:
         qname = entry["qname"]
         qtype = entry["qtype"]
 
-        self.query_stats[client_ip]["total_queries"] += 1
-        self.query_stats[client_ip][f"qtype_{qtype}"] += 1
-        self.query_stats[client_ip]["queried_domains"].append(qname)
+        stats = self.query_stats[client_ip]
+        stats["total_queries"] += 1
+        stats[f"qtype_{qtype}"] += 1
+        if "queried_domains" not in stats:
+            stats["queried_domains"] = []
+        stats["queried_domains"].append(qname)
         self.top_queried_domains[qname] += 1
         
-        # Initialize threat score for client if not present
-        if "threat_score" not in self.query_stats[client_ip]:
-            self.query_stats[client_ip]["threat_score"] = 0
+        if "threat_score" not in stats:
+            stats["threat_score"] = 0
 
-        # Apply threat scoring
+        # Apply threat scoring using the helper method for safety
         if entry["is_honeypot_hit"]:
-            self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["fake_subdomain_query"]
-            self.query_stats[client_ip]["honeypot_hits"] += 1
-            # Specific subdomain scoring
+            stats["threat_score"] += self._get_threat_score("fake_subdomain_query")
+            stats["honeypot_hits"] += 1
             if "admin" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["admin_query"]
+                stats["threat_score"] += self._get_threat_score("admin_query")
             if "vpn" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["vpn_query"]
+                stats["threat_score"] += self._get_threat_score("vpn_query")
             if "internal" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["internal_query"]
+                stats["threat_score"] += self._get_threat_score("internal_query")
             if "db" in qname or "sql" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["db_query"]
+                stats["threat_score"] += self._get_threat_score("db_query")
             if "secret" in qname or "private" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["secret_query"]
+                stats["threat_score"] += self._get_threat_score("secret_query")
             if "backup" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["backup_query"]
+                stats["threat_score"] += self._get_threat_score("backup_query")
             if "remote" in qname:
-                self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["remote_query"]
+                stats["threat_score"] += self._get_threat_score("remote_query")
             
             if entry.get("is_dynamic"):
-                self.query_stats[client_ip]["threat_score"] += (THREAT_SCORES["fake_subdomain_query"] // 2) # Slightly lower for dynamic, still suspicious
+                stats["threat_score"] += (self._get_threat_score("fake_subdomain_query") // 2)
 
-        # High query volume
-        if self.query_stats[client_ip]["total_queries"] > THREAT_SCORES["high_query_volume_threshold"]:
-            self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["high_query_volume_score"]
-            self.query_stats[client_ip]["high_volume_flag"] = True
+        if stats["total_queries"] > self._get_threat_score("high_query_volume_threshold", 100):
+            stats["threat_score"] += self._get_threat_score("high_query_volume_score")
+            stats["high_volume_flag"] = True
         
-        # Suspicious QTYPEs (e.g., ANY queries, or other unusual types if they appear)
-        # Note: HoneyResolver_Enhanced currently only logs common types, but this can be extended
-        if qtype == "ANY": # QTYPE.ANY is not currently handled explicitly by HoneyResolver, but good to have
-             self.query_stats[client_ip]["threat_score"] += THREAT_SCORES["suspicious_qtype_query"]
+        if qtype == "ANY":
+             stats["threat_score"] += self._get_threat_score("suspicious_qtype_query")
 
     def generate_report(self):
-        """Generates and prints a comprehensive analytics report."""
-        print("\n" + "="*80)
-        print("                 HONEYRESOLVER LOG ANALYSIS REPORT                 ")
-        print("="*80 + "\n")
+        """Generates and logs a comprehensive analytics report in JSON format."""
+        logger.info("Generating analysis report...")
+        
+        # Log report header as JSON
+        report_header = {
+            "message": "HONEYRESOLVER LOG ANALYSIS REPORT",
+            "log_file": self.log_file_path,
+            "analysis_date": time.ctime(),
+            "total_dns_queries_processed": self.total_queries
+        }
+        logger.info(report_header)
 
-        print(f"Log File: {self.log_file_path}")
-        print(f"Analysis Date: {time.ctime()}")
-        print("="*80 + "\n")
-
-        print(f"Total DNS Queries Processed: {self.total_queries}\n")
-
-        print("--- Top 10 Queried Domains ---")
-        for qname, count in self.top_queried_domains.most_common(10):
-            print(f"  {qname}: {count} queries")
-        print("------------------------------\n")
-
-        print("--- Client IP Analysis ---")
+        # Log top 10 queried domains as JSON
+        if self.top_queried_domains:
+            top_domains = [{"qname": qname, "count": count} for qname, count in self.top_queried_domains.most_common(10)]
+            logger.info("Top 10 Queried Domains", extra={"top_domains": top_domains})
+        
+        # Log client IP analysis as JSON
         sorted_clients = sorted(
             self.query_stats.items(),
             key=lambda item: item[1].get("threat_score", 0),
@@ -208,23 +222,50 @@ class LogParser:
             if stats.get("high_volume_flag"):
                 status += ", High Volume"
 
-            print(f"\nClient IP: {client_ip} (Threat Score: {score}, Status: {status})")
-            print(f"  Total Queries: {stats['total_queries']}")
+            client_report = {
+                "message": "Client IP Analysis",
+                "client_ip": client_ip,
+                "threat_score": score,
+                "status": status,
+                "total_queries": stats['total_queries'],
+            }
             if stats.get("honeypot_hits"):
-                print(f"  Honeypot Hits: {stats['honeypot_hits']}")
+                client_report["honeypot_hits"] = stats['honeypot_hits']
             
-            print("  Query Types:")
-            for qtype, count in stats.items():
-                if qtype.startswith("qtype_"):
-                    print(f"    {qtype.replace('qtype_', '')}: {count} queries")
+            query_types = {qtype.replace('qtype_', ''): count for qtype, count in stats.items() if qtype.startswith("qtype_")}
+            if query_types:
+                client_report["query_types"] = query_types
             
-            # Print unique queried domains for suspicious clients
             if score > 0 and stats.get("queried_domains"):
-                unique_domains = sorted(list(set(stats["queried_domains"])))
-                print("  Unique Queried Domains:")
-                for domain in unique_domains:
-                    print(f"    - {domain}")
-        print("="*80 + "\n")
+                client_report["unique_queried_domains"] = sorted(list(set(stats["queried_domains"])))
+            
+            logger.info(client_report)
+
+def validate_log_file_path(log_file_path: str) -> Optional[str]:
+    """
+    Validates the log file path to prevent directory traversal and ensure it exists.
+    A safe path is one that resolves to a file within the project's 'logs' directory.
+    """
+    # Get the absolute path of the project root
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    logs_dir = os.path.join(project_root, 'logs')
+    
+    # Resolve the absolute path of the user-provided path
+    user_path = os.path.abspath(os.path.join(logs_dir, log_file_path))
+
+    # Security Check: Ensure the resolved path is within the logs directory
+    if not user_path.startswith(logs_dir):
+        logger.warning("Path traversal attempt blocked.", extra={
+            'attempted_path': log_file_path,
+            'resolved_path': user_path,
+            'allowed_directory': logs_dir
+        })
+        return None
+        
+    if os.path.exists(user_path) and os.path.isfile(user_path):
+        return user_path
+        
+    return None
 
 def main():
     """Main function to parse arguments and run the log analysis."""
@@ -233,20 +274,23 @@ def main():
     )
     parser.add_argument(
         "log_file",
-        nargs="?", # Makes the argument optional
+        nargs="?",
         default=DEFAULT_LOG_FILE,
-        help=f"Path to the HoneyResolver log file (default: {DEFAULT_LOG_FILE})."
+        help=f"Path to the HoneyResolver log file (default: {DEFAULT_LOG_FILE}). Must be inside the 'logs' directory."
     )
     args = parser.parse_args()
 
-    # Ensure log_parser uses its own console handler for reporting, not the HoneyResolver's
-    # Remove existing handlers to avoid duplicate output
-    if logger.hasHandlers():
-        logger.handlers.clear()
-    logger.addHandler(logging.StreamHandler(sys.stdout))
+    # --- Input Validation ---
+    validated_path = validate_log_file_path(args.log_file)
+    if not validated_path:
+        logger.critical("Invalid or unsafe log file path specified.", extra={'log_file': args.log_file})
+        sys.exit(f"Error: The log file must be a valid file located within the 'logs' directory.")
 
-    log_parser = LogParser(args.log_file)
+    # Pass the loaded threat scores to the parser instance
+    log_parser = LogParser(validated_path, THREAT_SCORES)
     log_parser.parse_logs()
+    
+    # Generate report will now log JSON output
     log_parser.generate_report()
 
 if __name__ == "__main__":

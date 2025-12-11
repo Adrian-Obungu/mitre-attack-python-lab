@@ -1,0 +1,285 @@
+{
+  "errors": [],
+  "generated_at": "2025-12-11T12:57:43Z",
+  "metrics": {
+    "_totals": {
+      "CONFIDENCE.HIGH": 6,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 6,
+      "SEVERITY.MEDIUM": 2,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 882,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/defense\\HoneyResolver_Enhanced.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 2,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 154,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/defense\\__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 7,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/reconnaissance\\PortScan_Enhanced.py": {
+      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 3,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 243,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/reconnaissance\\__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 7,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/reconnaissance\\dns_recon.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 127,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/reconnaissance\\tcp_connect_scan.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 107,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/utils\\__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 7,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "src/utils\\log_parser.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 230,
+      "nosec": 0,
+      "skipped_tests": 0
+    }
+  },
+  "results": [
+    {
+      "code": "38 HONEYPOT_DOMAIN = CONFIG.get(\"HONEYPOT_DOMAIN\", \"example.com\")\n39 LISTEN_ADDR = CONFIG.get(\"LISTEN_ADDR\", \"0.0.0.0\")\n40 LISTEN_PORT = CONFIG.get(\"LISTEN_PORT\", 8053)\n",
+      "col_offset": 40,
+      "end_col_offset": 49,
+      "filename": "src/defense\\HoneyResolver_Enhanced.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 605,
+        "link": "https://cwe.mitre.org/data/definitions/605.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible binding to all interfaces.",
+      "line_number": 39,
+      "line_range": [
+        39
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/plugins/b104_hardcoded_bind_all_interfaces.html",
+      "test_id": "B104",
+      "test_name": "hardcoded_bind_all_interfaces"
+    },
+    {
+      "code": "112 def run_health_server():\n113     server_address = ('0.0.0.0', HEALTH_METRICS_PORT)\n114     httpd = HTTPServer(server_address, HealthCheckHandler)\n",
+      "col_offset": 22,
+      "end_col_offset": 31,
+      "filename": "src/defense\\HoneyResolver_Enhanced.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 605,
+        "link": "https://cwe.mitre.org/data/definitions/605.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible binding to all interfaces.",
+      "line_number": 113,
+      "line_range": [
+        113
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/plugins/b104_hardcoded_bind_all_interfaces.html",
+      "test_id": "B104",
+      "test_name": "hardcoded_bind_all_interfaces"
+    },
+    {
+      "code": "135         \n136         random_ip = f\"10.0.2.{random.randint(1, 254)}\"\n137         return random_ip, \"random\"\n",
+      "col_offset": 30,
+      "end_col_offset": 52,
+      "filename": "src/defense\\HoneyResolver_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 136,
+      "line_range": [
+        136
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "174         elif qtype == QTYPE.AAAA:\n175             fake_ipv6 = f\"2001:db8::{random.randint(1, 65535):x}:{random.randint(1, 65535):x}\"\n176             reply.add_answer(RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(fake_ipv6)))\n",
+      "col_offset": 37,
+      "end_col_offset": 61,
+      "filename": "src/defense\\HoneyResolver_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 175,
+      "line_range": [
+        175
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "174         elif qtype == QTYPE.AAAA:\n175             fake_ipv6 = f\"2001:db8::{random.randint(1, 65535):x}:{random.randint(1, 65535):x}\"\n176             reply.add_answer(RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(fake_ipv6)))\n",
+      "col_offset": 66,
+      "end_col_offset": 90,
+      "filename": "src/defense\\HoneyResolver_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 175,
+      "line_range": [
+        175
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "107             try:\n108                 src_port = random.randint(1025, 65534)\n109                 ip_packet = IP(dst=self.target_ip)\n",
+      "col_offset": 27,
+      "end_col_offset": 54,
+      "filename": "src/reconnaissance\\PortScan_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 108,
+      "line_range": [
+        108
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "139             try:\n140                 src_port = random.randint(1025, 65534)\n141                 ip_packet = IP(dst=self.target_ip)\n",
+      "col_offset": 27,
+      "end_col_offset": 54,
+      "filename": "src/reconnaissance\\PortScan_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 140,
+      "line_range": [
+        140
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "167             try:\n168                 src_port = random.randint(1025, 65534)\n169                 ip_packet = IP(dst=self.target_ip)\n",
+      "col_offset": 27,
+      "end_col_offset": 54,
+      "filename": "src/reconnaissance\\PortScan_Enhanced.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 168,
+      "line_range": [
+        168
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.2/blacklists/blacklist_calls.html#b311-random",
+      "test_id": "B311",
+      "test_name": "blacklist"
+    }
+  ]
+}

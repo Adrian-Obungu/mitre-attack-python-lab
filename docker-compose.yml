@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  honeypot:
+    build:
+      context: .
+      dockerfile: docker/honeypot/Dockerfile
+    ports:
+      - "53:53/udp" # DNS service
+      - "8000:8000/tcp" # Health check and Prometheus metrics
+    environment:
+      - HONEYPOT_CONFIG=/app/config/honeypot_config.json
+    volumes:
+      - ./logs:/app/logs # Mount host logs directory
+      - ./config/honeypot_config.json:/app/config/honeypot_config.json # Mount config
+    networks:
+      - honeynet
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  log_analyzer:
+    build:
+      context: .
+      dockerfile: docker/log_analyzer/Dockerfile
+    environment:
+      - THREAT_SCORES_CONFIG=/app/config/threat_scores.json
+    volumes:
+      - ./logs:/app/logs # Mount host logs directory
+      - ./config/threat_scores.json:/app/config/threat_scores.json # Mount config
+    networks:
+      - honeynet
+    # The log analyzer is typically run ad-hoc or as a scheduled task, not as a continuously running service.
+    # We define it here to make it easy to build the image and run it.
+    # To run: docker-compose run --rm log_analyzer <args>
+    # command: /app/src/utils/log_parser.py logs/honeyresolver.log # Default log file, can be overridden. Full path to script.
+
+  scanner:
+    build:
+      context: .
+      dockerfile: docker/scanner/Dockerfile
+    volumes:
+      - ./logs:/app/logs # Mount host logs directory (e.g., for dns_recon.log)
+    networks:
+      - honeynet
+    # The scanner is an ad-hoc tool. To run a scan:
+    # docker-compose run --rm scanner src/reconnaissance/tcp_connect_scan.py <target> -p <ports>
+    # docker-compose run --rm scanner src/reconnaissance/dns_recon.py -d <domain> -w <wordlist_file>
+    # command: "tail -f /dev/null" # Keep container running to be able to exec into it, or replace with custom run command
+    # Alternatively, without 'tail -f /dev/null', you could just build the image
+    # and run it directly with `docker run --rm <image_name> python src/reconnaissance/tcp_connect_scan.py ...`
+
+networks:
+  honeynet:
+    driver: bridge

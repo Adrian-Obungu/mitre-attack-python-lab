@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: honeypot
+  labels:
+    app: honeypot
+spec:
+  selector:
+    app: honeypot
+  ports:
+  - name: dns
+    protocol: UDP
+    port: 53
+    targetPort: 8053
+  - name: http-metrics
+    protocol: TCP
+    port: 80
+    targetPort: 8000 # Use targetPort 8000 for health checks and Prometheus metrics
+  type: LoadBalancer # Or ClusterIP if not exposing externally
