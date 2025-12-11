@@ -1,4 +1,19 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+"""
+Log Parser for HoneyResolver Enhanced
+Parses JSON-formatted DNS honeypot logs and performs threat analysis.
+"""
+from typing import Optional, Dict, Any, List
+import json
+import re
+import os
+import sys
+import logging
+import argparse
+import time
+from collections import defaultdict, Counter
+
+# ... (rest of your existing file content) ...
 """
 log_parser.py: Log Parser and Analytics for DNS Honeypot Logs
 
