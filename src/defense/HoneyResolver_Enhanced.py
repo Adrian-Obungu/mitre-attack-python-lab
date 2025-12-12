@@ -12,10 +12,11 @@ import os
 import re
 import sys
 import threading
+import socketserver
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from dnslib import *
-from dnslib.server import DNSServer
+from dnslib.server import DNSServer, DNSHandler
 
 # Prometheus client imports
 from prometheus_client import start_http_server, Counter, Gauge
@@ -99,6 +100,17 @@ logger.addHandler(console_handler)
 file_handler = logging.FileHandler('logs/honeyresolver.log')
 file_handler.setFormatter(JsonFormatter())
 logger.addHandler(file_handler)
+
+# --- Reusable Server Classes with SO_REUSEADDR ---
+class ReusableUDPServer(socketserver.UDPServer):
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
+        self.allow_reuse_address = True
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+
+class ReusableTCPServer(socketserver.TCPServer):
+    def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
+        self.allow_reuse_address = True
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
 
 # --- Health Check Server ---
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -211,7 +223,12 @@ def main():
     health_thread.start()
 
     resolver = EnhancedHoneyResolver(CONFIG)
-    server = DNSServer(resolver, port=LISTEN_PORT, address=LISTEN_ADDR)
+    # Instantiate DNSServer with reusable socket server classes
+    server = DNSServer(resolver,
+                       port=LISTEN_PORT,
+                       address=LISTEN_ADDR,
+                       udp_server=ReusableUDPServer,
+                       tcp_server=ReusableTCPServer)
     
     try:
         server.start() # Blocking call
