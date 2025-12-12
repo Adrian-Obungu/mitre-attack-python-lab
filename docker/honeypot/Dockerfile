@@ -26,7 +26,8 @@ FROM python:3.9-slim as runtime
 WORKDIR /app
 
 # Copy installed dependencies and application code
-COPY --from=builder /usr/local/lib/python${PYTHON_VERSION}/site-packages /usr/local/lib/python${PYTHON_VERSION}/site-packages
+# Using python3.9 path is more robust than a specific micro version
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /app/src/defense/HoneyResolver_Enhanced.py src/defense/HoneyResolver_Enhanced.py
 COPY --from=builder /app/config/honeypot_config.json config/honeypot_config.json
 RUN mkdir -p logs/ # Ensure logs directory exists for FileHandler
