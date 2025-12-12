@@ -84,7 +84,7 @@ os.makedirs("logs", exist_ok=True)
 
 # Setup logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # Clear existing handlers to prevent duplicate output if basicConfig was called elsewhere
 if logger.hasHandlers():
@@ -141,48 +141,62 @@ class EnhancedHoneyResolver:
     
     def resolve(self, request, handler):
         """Main resolver function."""
-        self.query_count += 1
-        
-        qname = str(request.q.qname)
-        qtype = request.q.qtype
-        
-        # Sanitize qname before further processing and logging
-        sanitized_qname = sanitize_log_input(qname)
-
-        domain_suffix = f".{self.config['HONEYPOT_DOMAIN']}."
-        if sanitized_qname.endswith(domain_suffix):
-            subdomain = sanitized_qname[:-len(domain_suffix)]
-        else:
-            subdomain = sanitized_qname
-        
         client_ip = handler.client_address[0]
-        response_ip, category = self.get_response_ip(subdomain)
-        
-        # Increment Prometheus counter
-        DNS_QUERIES_TOTAL.labels(qtype=QTYPE[qtype], category=category).inc()
+        try:
+            # Diagnostic log to confirm receipt of packet
+            logger.debug(f"Received {len(request.pack())} bytes from {client_ip}")
 
-        # Log with extra fields for JSON formatter
-        logger.info("DNS Query received", extra={
-            'client_ip': client_ip,
-            'qname': sanitized_qname,
-            'qtype': QTYPE[qtype],
-            'response_ip': response_ip,
-            'category': category
-        })
-        
-        reply = request.reply()
-        
-        if qtype == QTYPE.A:
-            reply.add_answer(RR(rname=qname, rtype=QTYPE.A, rclass=1, ttl=300, rdata=A(response_ip)))
-        elif qtype == QTYPE.AAAA:
-            fake_ipv6 = f"2001:db8::{random.randint(1, 65535):x}:{random.randint(1, 65535):x}"
-            reply.add_answer(RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(fake_ipv6)))
-        elif qtype == QTYPE.MX:
-            reply.add_answer(RR(rname=qname, rtype=QTYPE.MX, rclass=1, ttl=300, rdata=MX(10, f"mail.{self.config['HONEYPOT_DOMAIN']}.")))
-        else:
-            reply.add_answer(RR(rname=qname, rtype=QTYPE.A, rclass=1, ttl=300, rdata=A(response_ip)))
-        
-        return reply
+            self.query_count += 1
+            
+            qname = str(request.q.qname)
+            qtype = request.q.qtype
+            qtype_str = QTYPE[qtype]
+            
+            # Sanitize qname before further processing and logging
+            sanitized_qname = sanitize_log_input(qname)
+
+            domain_suffix = f".{self.config['HONEYPOT_DOMAIN']}."
+            if sanitized_qname.endswith(domain_suffix):
+                subdomain = sanitized_qname[:-len(domain_suffix)]
+            else:
+                subdomain = sanitized_qname
+            
+            response_ip, category = self.get_response_ip(subdomain)
+            
+            # Increment Prometheus counter
+            DNS_QUERIES_TOTAL.labels(qtype=qtype_str, category=category).inc()
+
+            # Log with extra fields for JSON formatter
+            logger.info("DNS Query received", extra={
+                'client_ip': client_ip,
+                'qname': sanitized_qname,
+                'qtype': qtype_str,
+                'response_ip': response_ip,
+                'category': category
+            })
+            
+            reply = request.reply()
+            
+            if qtype == QTYPE.A:
+                reply.add_answer(RR(rname=qname, rtype=QTYPE.A, rclass=1, ttl=300, rdata=A(response_ip)))
+            elif qtype == QTYPE.AAAA:
+                fake_ipv6 = f"2001:db8::{random.randint(1, 65535):x}:{random.randint(1, 65535):x}"
+                reply.add_answer(RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(fake_ipv6)))
+            elif qtype == QTYPE.MX:
+                reply.add_answer(RR(rname=qname, rtype=QTYPE.MX, rclass=1, ttl=300, rdata=MX(10, f"mail.{self.config['HONEYPOT_DOMAIN']}.")))
+            else:
+                reply.add_answer(RR(rname=qname, rtype=QTYPE.A, rclass=1, ttl=300, rdata=A(response_ip)))
+            
+            return reply
+        except Exception:
+            # Fortified error handling
+            logger.error(f"Error handling query from {client_ip}", exc_info=True)
+            # Increment error counter
+            DNS_QUERIES_TOTAL.labels(qtype='unknown', category='error').inc()
+            # Still need to return a valid DNS response to the client
+            reply = request.reply()
+            reply.header.rcode = RCODE.SERVFAIL
+            return reply
 
 def main():
     """Main function to run the DNS honeypot."""
