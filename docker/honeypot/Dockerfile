@@ -8,11 +8,11 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache build-base
 
-# Copy requirements file
-COPY config/requirements.txt ./config/
+# Copy requirements file (using the slimmed-down requirements-docker.txt for production)
+COPY config/requirements-docker.txt ./config/
 
 # Install dependencies
-RUN pip install --no-cache-dir -r config/requirements.txt
+RUN pip install --no-cache-dir -r config/requirements-docker.txt
 
 # Copy application code and configuration
 COPY src/defense/HoneyResolver_Enhanced.py src/defense/
