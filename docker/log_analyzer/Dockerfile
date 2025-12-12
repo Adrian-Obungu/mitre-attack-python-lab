@@ -4,12 +4,12 @@ ARG PYTHON_VERSION=3.9.18
 # -----------------------------------------------------------------------------
 # Builder stage
 # -----------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-alpine as builder
+FROM python:3.9-slim as builder
 
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache build-base
+RUN apt-get update && apt-get install -y build-essential
 
 # Copy requirements file (using the slimmed-down requirements-docker.txt for production)
 COPY config/requirements-docker.txt ./config/
@@ -24,7 +24,7 @@ COPY config/threat_scores.json config/
 # -----------------------------------------------------------------------------
 # Runtime stage
 # -----------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-alpine as runtime
+FROM python:3.9-slim as runtime
 
 WORKDIR /app
 
