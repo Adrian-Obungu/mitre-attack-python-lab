@@ -71,6 +71,10 @@ class JsonFormatter(logging.Formatter):
             log_record['response_ip'] = record.response_ip
         if hasattr(record, 'category'):
             log_record['category'] = record.category
+        if hasattr(record, 'rd_flag'):
+            log_record['rd_flag'] = record.rd_flag
+        if hasattr(record, 'qclass'):
+            log_record['qclass'] = record.qclass
             
         return json.dumps(log_record)
 
@@ -163,6 +167,9 @@ class EnhancedHoneyResolver:
             qname = str(request.q.qname)
             qtype = request.q.qtype
             qtype_str = QTYPE[qtype]
+            rd_flag = request.header.rd # Extract Recursion Desired flag
+            qclass = request.q.qclass
+            qclass_str = CLASS[qclass] # Extract Query Class
             
             # Sanitize qname before further processing and logging
             sanitized_qname = sanitize_log_input(qname)
@@ -183,6 +190,8 @@ class EnhancedHoneyResolver:
                 'client_ip': client_ip,
                 'qname': sanitized_qname,
                 'qtype': qtype_str,
+                'rd_flag': rd_flag, # Log RD flag
+                'qclass': qclass_str, # Log QCLASS
                 'response_ip': response_ip,
                 'category': category
             })

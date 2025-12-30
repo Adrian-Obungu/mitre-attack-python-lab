@@ -112,10 +112,6 @@ class LogParser:
         self.total_queries = 0
         self.top_queried_domains = Counter()
 
-    def _get_threat_score(self, key: str, default: int = 0) -> int:
-        """Safely retrieves a threat score from the configuration."""
-        return self.threat_scores.get(key, default)
-
     def parse_logs(self):
         """
         Reads and parses each line of the log file.
@@ -158,6 +154,35 @@ class LogParser:
             self.parsed_entries.append(entry)
             self._update_statistics(entry)
 
+    def _apply_detection_rules(self, entry: Dict[str, Any], stats: Dict[str, Any]):
+        """
+        Takes a parsed log entry and the current statistics dictionary for a client IP.
+        Applies a set of detection rules based on qname keywords to update the threat score.
+        This method is called specifically for honeypot hits.
+        """
+        qname = entry["qname"]
+
+        # Rules are defined as (keyword, threat_score_key)
+        # The key is what we look for in the qname, the value is the key to retrieve score from self.threat_scores
+        detection_rules = {
+            "admin": "admin_query",
+            "vpn": "vpn_query",
+            "internal": "internal_query",
+            "db": "db_query", # Assuming threat_scores.json has 'db_query'
+            "sql": "db_query", # Map 'sql' to the same 'db_query' score
+            "secret": "secret_query",
+            "private": "secret_query", # Map 'private' to 'secret_query'
+            "backup": "backup_query",
+            "remote": "remote_query",
+        }
+
+        for keyword, score_key in detection_rules.items():
+            if keyword in qname:
+                stats["threat_score"] += self._get_threat_score(score_key)
+
+        # Specific rule for dynamic honeypot hits
+        if entry.get("is_dynamic"):
+            stats["threat_score"] += (self._get_threat_score("fake_subdomain_query") // 2)
 
     def _update_statistics(self, entry: Dict[str, Any]):
         """Updates internal statistics based on a parsed log entry."""
@@ -177,32 +202,18 @@ class LogParser:
         if "threat_score" not in stats:
             stats["threat_score"] = 0
 
-        # Apply threat scoring using the helper method for safety
+        # Apply threat scoring using the new helper method if it's a honeypot hit
         if entry["is_honeypot_hit"]:
             stats["threat_score"] += self._get_threat_score("fake_subdomain_query")
             stats["honeypot_hits"] += 1
-            if "admin" in qname:
-                stats["threat_score"] += self._get_threat_score("admin_query")
-            if "vpn" in qname:
-                stats["threat_score"] += self._get_threat_score("vpn_query")
-            if "internal" in qname:
-                stats["threat_score"] += self._get_threat_score("internal_query")
-            if "db" in qname or "sql" in qname:
-                stats["threat_score"] += self._get_threat_score("db_query")
-            if "secret" in qname or "private" in qname:
-                stats["threat_score"] += self._get_threat_score("secret_query")
-            if "backup" in qname:
-                stats["threat_score"] += self._get_threat_score("backup_query")
-            if "remote" in qname:
-                stats["threat_score"] += self._get_threat_score("remote_query")
-            
-            if entry.get("is_dynamic"):
-                stats["threat_score"] += (self._get_threat_score("fake_subdomain_query") // 2)
+            self._apply_detection_rules(entry, stats) # Call the new method
 
+        # High query volume threshold (remains intact)
         if stats["total_queries"] > self._get_threat_score("high_query_volume_threshold", 100):
             stats["threat_score"] += self._get_threat_score("high_query_volume_score")
             stats["high_volume_flag"] = True
         
+        # QTYPE ANY check (remains intact at original scope)
         if qtype == "ANY":
              stats["threat_score"] += self._get_threat_score("suspicious_qtype_query")
 
