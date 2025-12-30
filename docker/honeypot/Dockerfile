@@ -36,5 +36,11 @@ RUN mkdir -p logs/ # Ensure logs directory exists for FileHandler
 EXPOSE 8053
 EXPOSE 8000 # For health checks / metrics (will be added later)
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:8000/health || exit 1
+
 # Command to run the honeypot
 CMD ["python", "src/defense/HoneyResolver_Enhanced.py"]

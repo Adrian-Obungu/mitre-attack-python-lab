@@ -11,15 +11,16 @@ WORKDIR /app
 # Install build dependencies
 RUN apt-get update && apt-get install -y build-essential
 
-# Copy requirements file (using the slimmed-down requirements-docker.txt for production)
-COPY config/requirements-docker.txt ./config/
+# Copy requirements file (using the full requirements.txt for now, to ensure all needed libs)
+COPY config/requirements.txt ./config/
 
 # Install dependencies
-RUN pip install --no-cache-dir -r config/requirements-docker.txt
+RUN pip install --no-cache-dir -r config/requirements.txt
 
 # Copy application code
 COPY src/reconnaissance/tcp_connect_scan.py src/reconnaissance/
 COPY src/reconnaissance/dns_recon.py src/reconnaissance/
+COPY src/reconnaissance/PortScan_Enhanced.py src/reconnaissance/ # Add PortScan_Enhanced.py
 
 # -----------------------------------------------------------------------------
 # Runtime stage
@@ -29,11 +30,14 @@ FROM python:3.9-slim as runtime
 WORKDIR /app
 
 # Copy installed dependencies and application code
-# Using python3.9 path is more robust than a specific micro version
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /app/src/reconnaissance/tcp_connect_scan.py src/reconnaissance/tcp_connect_scan.py
 COPY --from=builder /app/src/reconnaissance/dns_recon.py src/reconnaissance/dns_recon.py
+COPY --from=builder /app/src/reconnaissance/PortScan_Enhanced.py src/reconnaissance/PortScan_Enhanced.py # Copy PortScan_Enhanced.py
+
+# Healthcheck to verify the PortScan_Enhanced.py script is present and executable
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD ["python", "-c", "import os; exit(not os.path.exists('/app/src/reconnaissance/PortScan_Enhanced.py'))"]
 
 # Set entrypoint to easily run scanner scripts
 ENTRYPOINT ["python"]
-CMD [] # Allow user to specify which script to run (e.g., "src/reconnaissance/tcp_connect_scan.py --target example.com")
+CMD [] # Allow user to specify which script to run (e.g., "src/reconnaissance/PortScan_Enhanced.py --target example.com")

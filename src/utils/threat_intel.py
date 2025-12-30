@@ -119,6 +119,17 @@ class ThreatIntelClient:
         Returns:
             A dictionary containing aggregated threat intelligence information.
         """
+        # Mock mode if no API keys are configured
+        if not self.abuseipdb_api_key and not self.virustotal_api_key:
+            logger.info(f"Mock mode active for {ip_address}: No AbuseIPDB or VirusTotal API keys configured.")
+            return {
+                "ip_address": ip_address,
+                "reputation": "unknown",
+                "summary": "Threat intelligence lookup skipped (API keys missing, mock mode active).",
+                "is_malicious": False,
+                "mock_mode": True,
+            }
+
         reputation = {
             "ip_address": ip_address,
             "abuseipdb": {},
