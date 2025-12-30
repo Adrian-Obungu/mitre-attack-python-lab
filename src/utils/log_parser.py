@@ -36,6 +36,7 @@ from typing import Dict, List, Any
 import logging
 import sys
 import time
+from src.utils.threat_intel import ThreatIntelClient # Import the ThreatIntelClient
 
 # --- Configuration ---
 DEFAULT_LOG_FILE = "logs/honeyresolver.log" # Assumes log file is in the 'logs' directory
@@ -101,12 +102,17 @@ class LogParser:
     """
     Parses DNS honeypot logs, extracts statistics, and calculates threat scores.
     """
-    def __init__(self, log_file_path: str, threat_scores: Dict):
+    def __init__(self, log_file_path: str, threat_scores: Dict, threat_intel_client: Optional[ThreatIntelClient] = None):
         """
         Initializes the LogParser with the path to the log file and threat scores.
+        Args:
+            log_file_path: Path to the log file to parse.
+            threat_scores: Dictionary containing threat scoring rules.
+            threat_intel_client: An optional ThreatIntelClient instance for IP reputation lookups.
         """
         self.log_file_path = log_file_path
         self.threat_scores = threat_scores
+        self.threat_intel_client = threat_intel_client
         self.parsed_entries: List[Dict[str, Any]] = []
         self.query_stats = defaultdict(lambda: defaultdict(int)) # {client_ip: {qtype: count, qname: count, score: int}}
         self.total_queries = 0
@@ -265,6 +271,12 @@ class LogParser:
             if score > 0 and stats.get("queried_domains"):
                 client_report["unique_queried_domains"] = sorted(list(set(stats["queried_domains"])))
             
+            # Integrate Threat Intelligence if client is available and IP is suspicious
+            if self.threat_intel_client and score > 0:
+                logger.info(f"Performing threat intelligence lookup for {client_ip}...")
+                reputation_data = self.threat_intel_client.get_ip_reputation(client_ip)
+                client_report["threat_reputation"] = reputation_data
+            
             logger.info(client_report)
 
 def validate_log_file_path(log_file_path: str) -> Optional[str]:
@@ -319,8 +331,11 @@ def main():
         logger.critical("Invalid or unsafe log file path specified.", extra={'log_file': args.log_file})
         sys.exit(f"Error: The log file must be a valid file located within the 'logs' directory.")
 
-    # Pass the loaded threat scores to the parser instance
-    log_parser = LogParser(validated_path, THREAT_SCORES)
+    # Initialize ThreatIntelClient
+    threat_intel_client = ThreatIntelClient()
+    
+    # Pass the loaded threat scores and ThreatIntelClient to the parser instance
+    log_parser = LogParser(validated_path, THREAT_SCORES, threat_intel_client=threat_intel_client)
     log_parser.parse_logs()
     
     # Generate report will now log JSON output
