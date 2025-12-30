@@ -20,6 +20,8 @@ import os
 import re
 import ctypes
 from typing import Dict, List, Optional, Tuple
+import concurrent.futures
+import threading
 
 from scapy.all import IP, TCP, sr1, conf
 from dns import resolver, exception
@@ -82,7 +84,7 @@ def validate_and_parse_ports(ports_str: str) -> Optional[List[int]]:
 class PortScanner:
     """A class for conducting various types of network port scans."""
 
-    def __init__(self, target_ip: str, ports: List[int], timeout: int = 2):
+    def __init__(self, target_ip: str, ports: List[int], timeout: int = 2, max_threads: int = 10):
         """
         Initializes the PortScanner.
 
@@ -90,99 +92,128 @@ class PortScanner:
             target_ip: The IP address of the target machine.
             ports: A list of port numbers to scan.
             timeout: The timeout for network packets in seconds.
+            max_threads: The maximum number of threads to use for concurrent scans.
         """
         self.target_ip = target_ip
         self.ports = ports
         self.timeout = timeout
-        logger.info(f"PortScanner initialized for target: {self.target_ip}")
+        self.max_threads = max_threads
+        self.results_lock = threading.Lock() # For thread-safe updates to results
+        # A shared dictionary to store results for the current scan type
+        self.scan_results: Dict[int, str] = {} 
+        logger.info(f"PortScanner initialized for target: {self.target_ip} with {self.max_threads} concurrent threads.")
 
-    def syn_scan(self) -> Dict[int, str]:
-        """
-        Performs a TCP SYN scan to identify open, closed, or filtered ports.
-        MITRE ATT&CK: T1046 (Network Service Scanning)
-        """
-        logger.info(f"Starting SYN scan on {self.target_ip} for ports: {self.ports}")
-        results = {}
-        for port in self.ports:
-            try:
-                src_port = random.randint(1025, 65534)
-                ip_packet = IP(dst=self.target_ip)
+    def _scan_single_port(self, port: int, scan_type: str) -> Tuple[int, str]:
+        """Helper to scan a single port using the specified scan type."""
+        src_port = random.randint(1025, 65534)
+        ip_packet = IP(dst=self.target_ip)
+        
+        try:
+            if scan_type == "syn":
                 tcp_packet = TCP(sport=src_port, dport=port, flags="S")
                 response = sr1(ip_packet / tcp_packet, timeout=self.timeout, verbose=0)
 
                 if response is None:
-                    results[port] = "Filtered"
+                    return port, "Filtered"
                 elif response.haslayer(TCP):
                     if response.getlayer(TCP).flags == 0x12:  # SYN/ACK
                         sr1(IP(dst=self.target_ip) / TCP(sport=src_port, dport=port, flags="R"), timeout=self.timeout, verbose=0)
-                        results[port] = "Open"
+                        return port, "Open"
                     elif response.getlayer(TCP).flags == 0x14:  # RST/ACK
-                        results[port] = "Closed"
-                else:
-                    results[port] = "Filtered"
+                        return port, "Closed"
+                return port, "Filtered" # Default to filtered if no clear response
 
-            except Exception as e:
-                logger.error(f"Error scanning port {port}: {e}")
-                results[port] = "Error"
-
-        self._log_results("SYN Scan", results)
-        return results
-
-    def ack_scan(self) -> Dict[int, str]:
-        """
-        Performs a TCP ACK scan to infer firewall presence.
-        MITRE ATT&CK: T1595.001 (Active Scanning) - for firewall discovery.
-        """
-        logger.info(f"Starting ACK scan on {self.target_ip} for ports: {self.ports}")
-        results = {}
-        for port in self.ports:
-            try:
-                src_port = random.randint(1025, 65534)
-                ip_packet = IP(dst=self.target_ip)
+            elif scan_type == "ack":
                 tcp_packet = TCP(sport=src_port, dport=port, flags="A")
                 response = sr1(ip_packet / tcp_packet, timeout=self.timeout, verbose=0)
 
                 if response is None:
-                    results[port] = "Filtered (Stateful Firewall)"
+                    return port, "Filtered (Stateful Firewall)"
                 elif response.haslayer(TCP) and response.getlayer(TCP).flags == 0x4:  # RST
-                    results[port] = "Unfiltered (No Firewall or Stateless)"
-                else:
-                    results[port] = "Filtered"
-
-            except Exception as e:
-                logger.error(f"Error during ACK scan on port {port}: {e}")
-                results[port] = "Error"
-        
-        self._log_results("ACK Scan", results)
-        return results
-
-    def xmas_scan(self) -> Dict[int, str]:
-        """
-        Performs a TCP XMAS scan using FIN, PSH, and URG flags.
-        MITRE ATT&CK: T1046 (Network Service Scanning)
-        """
-        logger.info(f"Starting XMAS scan on {self.target_ip} for ports: {self.ports}")
-        results = {}
-        for port in self.ports:
-            try:
-                src_port = random.randint(1025, 65534)
-                ip_packet = IP(dst=self.target_ip)
+                    return port, "Unfiltered (No Firewall or Stateless)"
+                return port, "Filtered" # Default to filtered if no clear response
+            
+            elif scan_type == "xmas":
                 tcp_packet = TCP(sport=src_port, dport=port, flags="FPU") # FIN, PSH, URG
                 response = sr1(ip_packet / tcp_packet, timeout=self.timeout, verbose=0)
 
                 if response is None:
-                    results[port] = "Open|Filtered"
+                    return port, "Open|Filtered"
                 elif response.haslayer(TCP) and response.getlayer(TCP).flags == 0x14: # RST/ACK
-                    results[port] = "Closed"
-                else:
-                    results[port] = "Filtered"
-            
-            except Exception as e:
-                logger.error(f"Error during XMAS scan on port {port}: {e}")
-                results[port] = "Error"
+                    return port, "Closed"
+                return port, "Filtered" # Default to filtered if no clear response
+
+        except Exception as e:
+            logger.error(f"Error during {scan_type} scan on port {port}: {e}")
+            return port, "Error"
         
-        self._log_results("XMAS Scan", results)
-        return results
+        return port, "Unknown" # Should not be reached
+
+    def syn_scan(self) -> Dict[int, str]:
+        """
+        Performs a TCP SYN scan concurrently to identify open, closed, or filtered ports.
+        MITRE ATT&CK: T1046 (Network Service Scanning)
+        """
+        logger.info(f"Starting concurrent SYN scan on {self.target_ip} for ports: {self.ports}")
+        self.scan_results = {} # Reset results for this scan type
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            future_to_port = {executor.submit(self._scan_single_port, port, "syn"): port for port in self.ports}
+            for future in concurrent.futures.as_completed(future_to_port):
+                port = future_to_port[future]
+                try:
+                    port_num, status = future.result()
+                    with self.results_lock:
+                        self.scan_results[port_num] = status
+                except Exception as exc:
+                    logger.error(f"Port {port} generated an exception during SYN scan: {exc}")
+        
+        self._log_results("SYN Scan", self.scan_results)
+        return self.scan_results
+
+    def ack_scan(self) -> Dict[int, str]:
+        """
+        Performs a TCP ACK scan concurrently to infer firewall presence.
+        MITRE ATT&CK: T1595.001 (Active Scanning) - for firewall discovery.
+        """
+        logger.info(f"Starting concurrent ACK scan on {self.target_ip} for ports: {self.ports}")
+        self.scan_results = {} # Reset results for this scan type
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            future_to_port = {executor.submit(self._scan_single_port, port, "ack"): port for port in self.ports}
+            for future in concurrent.futures.as_completed(future_to_port):
+                port = future_to_port[future]
+                try:
+                    port_num, status = future.result()
+                    with self.results_lock:
+                        self.scan_results[port_num] = status
+                except Exception as exc:
+                    logger.error(f"Port {port} generated an exception during ACK scan: {exc}")
+        
+        self._log_results("ACK Scan", self.scan_results)
+        return self.scan_results
+
+    def xmas_scan(self) -> Dict[int, str]:
+        """
+        Performs a TCP XMAS scan concurrently using FIN, PSH, and URG flags.
+        MITRE ATT&CK: T1046 (Network Service Scanning)
+        """
+        logger.info(f"Starting concurrent XMAS scan on {self.target_ip} for ports: {self.ports}")
+        self.scan_results = {} # Reset results for this scan type
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            future_to_port = {executor.submit(self._scan_single_port, port, "xmas"): port for port in self.ports}
+            for future in concurrent.futures.as_completed(future_to_port):
+                port = future_to_port[future]
+                try:
+                    port_num, status = future.result()
+                    with self.results_lock:
+                        self.scan_results[port_num] = status
+                except Exception as exc:
+                    logger.error(f"Port {port} generated an exception during XMAS scan: {exc}")
+        
+        self._log_results("XMAS Scan", self.scan_results)
+        return self.scan_results
 
     @staticmethod
     def dns_scan(target_domain: str) -> Dict[str, List[str]]:

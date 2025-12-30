@@ -224,23 +224,32 @@ def main():
 
     resolver = EnhancedHoneyResolver(CONFIG)
     # Instantiate DNSServer with reusable socket server classes
-    server = DNSServer(resolver,
-                       port=LISTEN_PORT,
-                       address=LISTEN_ADDR,
-                       udp_server=ReusableUDPServer,
-                       tcp_server=ReusableTCPServer)
-    
+    server = DNSServer(resolver, port=LISTEN_PORT, address=LISTEN_ADDR)
+    # Enable socket reuse to prevent "Address already in use" errors
+    server.udp_server.allow_reuse_address = True
+    server.tcp_server.allow_reuse_address = True
+    # Enable socket reuse to prevent "Address already in use" errors
+    server.udp_server.allow_reuse_address = True
+    server.tcp_server.allow_reuse_address = True
+    # Enable socket reuse to prevent "Address already in use" errors
+    server.udp_server.allow_reuse_address = True
+    server.tcp_server.allow_reuse_address = True
+
     try:
-        server.start() # Blocking call
+        server.start()
+        logger.info(f"Enhanced DNS HoneyResolver listening on {LISTEN_ADDR}:{LISTEN_PORT}")
+        # Keep the main thread alive while DNSServer runs in its own threads
+        while server.isAlive():
+            time.sleep(1)
     except KeyboardInterrupt:
-        logger.info("Shutting down...")
+        logger.info("DNS honeypot stopped by user (Ctrl+C)")
+    except Exception as e:
+        logger.critical(f"An unexpected error occurred: {e}", exc_info=True)
+        sys.exit(1)
+    finally:
         server.stop()
         DNS_RESOLVER_STATUS.set(0) # Set status to stopped
         logger.info(f"Total queries handled: {resolver.query_count}")
-    except Exception as e:
-        logger.critical(f"An unexpected error occurred: {e}")
-        DNS_RESOLVER_STATUS.set(0) # Set status to stopped
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()
