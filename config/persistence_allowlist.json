@@ -1,0 +1,5 @@
+{
+  "registry_autoruns": ["SecurityHealthSystray.exe", "RtkAudUService64.exe"],
+  "scheduled_tasks": ["AdobeAAMUpdater-1.0-Microsoft\\AdobeARM"],
+  "wmi_subscriptions": []
+}
