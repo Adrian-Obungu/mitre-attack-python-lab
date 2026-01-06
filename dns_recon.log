@@ -6,3 +6,22 @@
 2025-12-11 20:24:06,938 - INFO - Resolved www.example.com -> 104.20.34.220
 2025-12-11 20:24:09,977 - INFO - Scan completed in 3.12 seconds. Found 1 unique IP addresses.
 2025-12-11 20:24:17,578 - WARNING - No reverse DNS record found for 104.20.34.220
+2026-01-07 00:52:25,184 - CRITICAL - Wordlist not found or invalid path: config/common_subdomains.txt
+2026-01-07 00:57:33,549 - CRITICAL - Wordlist not found or invalid path: config/common_subdomains.txt
+2026-01-07 01:08:29,206 - INFO - Starting DNS reconnaissance for github.com with wordlist C:\Users\Adrian Obu\mitre-attack-python-lab\config\common_subdomains.txt using 1 threads.
+2026-01-07 01:08:29,290 - INFO - Resolved www.github.com -> 20.87.245.0
+2026-01-07 01:08:29,714 - INFO - Resolved admin.github.com -> 140.82.112.23
+2026-01-07 01:08:29,767 - INFO - Resolved api.github.com -> 20.87.245.6
+2026-01-07 01:08:29,817 - INFO - Resolved test.github.com -> 192.0.2.1
+2026-01-07 01:08:30,009 - INFO - Resolved ns1.github.com -> 192.0.2.1
+2026-01-07 01:08:30,054 - INFO - Resolved ns2.github.com -> 192.0.2.2
+2026-01-07 01:08:30,108 - INFO - Resolved blog.github.com -> 185.199.109.153
+2026-01-07 01:08:30,172 - INFO - Resolved wiki.github.com -> 140.82.113.17
+2026-01-07 01:08:30,672 - INFO - Scan completed in 1.46 seconds. Found 7 unique IP addresses.
+2026-01-07 01:08:35,231 - INFO - Reverse DNS for 140.82.112.23: lb-140-82-112-23-iad.github.com
+2026-01-07 01:08:39,798 - INFO - Reverse DNS for 140.82.113.17: lb-140-82-113-17-iad.github.com
+2026-01-07 01:08:44,383 - INFO - Reverse DNS for 185.199.109.153: cdn-185-199-109-153.github.com
+2026-01-07 01:08:48,962 - WARNING - No reverse DNS record found for 192.0.2.1
+2026-01-07 01:08:53,553 - WARNING - No reverse DNS record found for 192.0.2.2
+2026-01-07 01:08:58,291 - WARNING - No reverse DNS record found for 20.87.245.0
+2026-01-07 01:09:03,003 - WARNING - No reverse DNS record found for 20.87.245.6

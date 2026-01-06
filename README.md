@@ -41,6 +41,7 @@ This lab is equipped with a growing set of tools to simulate and counteract real
 | ✅ **Enhanced Port Scanner** (`SYN`, `ACK`, `XMAS` scans)                  | ✅ **DNS Honeypot Resolver** (Detects and logs suspicious DNS queries)   |
 | ✅ **DNS Reconnaissance** (Gather `A`, `AAAA`, `MX`, `TXT`, `NS` records) | ✅ **Log Analytics & Threat Scoring** (Parses logs to identify threats)  |
 | ✅ **Common Subdomain List** (`50+` common names for enumeration)        | ✅ **Enterprise-Grade Logging** (Structured logs for SIEM integration) |
+| ✅ **Privilege Escalation Auditor** (Detects Windows PE vectors)        |
 
 ---
 
@@ -53,7 +54,12 @@ The tools in this lab are directly mapped to specific MITRE ATT&CK techniques, p
 | **T1595**    | Active Scanning                      | The adversary probes victim infrastructure to identify vulnerabilities and discover information.           | `PortScan_Enhanced.py` (`syn`, `ack`, `xmas`)       |
 | **T1046**    | Network Service Scanning             | The adversary attempts to identify listening ports and services to find potential vulnerabilities.       | `PortScan_Enhanced.py` (`syn`, `xmas`)              |
 | **T1590**    | Gather Victim Host Information       | The adversary collects information about the victim's hosts, such as DNS records.                        | `PortScan_Enhanced.py` (`dns`)                      |
-| **T1018**    | Remote System Discovery              | An adversary may attempt to get a listing of other systems by IP address, hostname, or other means.    | `HoneyResolver_Enhanced.py` (Detects this behavior) |
+| **T1018** | Remote System Discovery | An adversary may attempt to get a listing of other systems by IP address, hostname, or other means.    | `HoneyResolver_Enhanced.py` (Detects this behavior) |
+| **T1037**    | Boot or Logon Autostart Execution | Adversaries may use logon scripts to establish persistence.                                             | `privilege_auditor.py`                       |
+| **T1073.001**| DLL Hijacking                     | Adversaries may hijack the Python search order to execute malicious code.                              | `privilege_auditor.py`                       |
+| **T1543.003**| Create or Modify System Process   | Adversaries may create or modify Windows services to execute malicious code.                           | `privilege_auditor.py`                       |
+| **T1053.005**| Scheduled Task/Job                | Adversaries may abuse scheduled tasks to execute programs at system startup or at a given time.      | `privilege_auditor.py`                       |
+| **T1548.002**| Bypass User Account Control       | Adversaries may bypass UAC mechanisms to execute programs with elevated privileges.                    | `privilege_auditor.py`                       |
 
 ---
 

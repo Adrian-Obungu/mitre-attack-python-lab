@@ -11,6 +11,8 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+from src.privilege.privilege_auditor import PrivilegeAuditor # New import for PrivilegeAuditor
+
 # Load environment variables
 load_dotenv()
 
@@ -191,6 +193,24 @@ async def get_reports(authenticated: bool = Depends(get_api_key)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Log parser script not found.",
+        )
+
+@app.post("/privilege/scan", summary="Scan for Privilege Escalation", response_description="Report on detected privilege escalation vectors.")
+async def privilege_scan(authenticated: bool = Depends(get_api_key)):
+    """
+    Triggers the PrivilegeAuditor to scan the system for known privilege escalation vulnerabilities.
+    Returns a JSON report of all findings.
+    """
+    logger.info("Received request to scan for privilege escalation.")
+    try:
+        auditor = PrivilegeAuditor()
+        report = auditor.run_all_checks()
+        return {"status": "success", "report": report}
+    except Exception as e:
+        logger.error(f"Privilege scan failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Privilege scan failed: {str(e)}",
         )
 
 if __name__ == "__main__":
