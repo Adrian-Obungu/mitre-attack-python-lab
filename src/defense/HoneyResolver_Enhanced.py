@@ -224,8 +224,8 @@ def main():
     logger.info("Starting Enhanced DNS HoneyResolver...")
 
     # Start Prometheus metrics server
-    start_http_server(HEALTH_METRICS_PORT)
-    logger.info(f"Prometheus metrics server running on port {HEALTH_METRICS_PORT}")
+    start_http_server(8001)
+    logger.info(f"Prometheus metrics server running on port 8001")
 
     # Start Health Check server in a separate thread
     health_thread = threading.Thread(target=run_health_server, daemon=True)

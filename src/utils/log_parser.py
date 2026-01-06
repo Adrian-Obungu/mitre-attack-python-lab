@@ -36,6 +36,17 @@ from typing import Dict, List, Any
 import logging
 import sys
 import time
+
+# Dynamically adjust sys.path for script execution if run directly
+# This allows absolute imports like 'from src.utils.threat_intel' to work
+# when the script is executed as main and 'src' is not automatically on sys.path.
+if __name__ == "__main__" and __package__ is None:
+    current_script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Assuming log_parser.py is in src/utils/, project root is two levels up
+    project_root = os.path.abspath(os.path.join(current_script_dir, '..', '..'))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
 from src.utils.threat_intel import ThreatIntelClient # Import the ThreatIntelClient
 
 # --- Configuration ---

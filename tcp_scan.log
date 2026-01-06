@@ -4,3 +4,6 @@
 2025-12-11 20:23:58,299 - INFO - Running demo scan on localhost for ports: [22, 80, 443, 3306, 3389, 8080, 9090]
 2025-12-11 20:23:58,300 - INFO - Starting scan on localhost for ports 1-100 with 10 threads.
 2025-12-11 20:23:59,455 - INFO - Scan completed in 1.15 seconds.
+2026-01-07 00:21:38,370 - INFO - Starting scan on scanme.nmap.org for ports 80 with 10 threads.
+2026-01-07 00:21:38,819 - INFO - Port 80 on scanme.nmap.org is Open
+2026-01-07 00:21:38,820 - INFO - Scan completed in 0.45 seconds.
