@@ -122,7 +122,7 @@ class PrivilegeAuditor:
                                     risk_level="HIGH",
                                     evidence=f"Registry Key: {subkey_path}, Value Name: {value_name}, Value Data: {value_data}",
                                     mitigation="Review the purpose of this logon script. If unauthorized, remove the registry entry.",
-                                    details={"key": str(hkey_root) + \"\\\" + subkey_path, "name": value_name, "data": value_data, "type": value_type}
+                                    details={"key": str(hkey_root) + "\\" + subkey_path, "name": value_name, "data": value_data, "type": value_type}
                                 ))
                             i += 1
                         except OSError: # No more values

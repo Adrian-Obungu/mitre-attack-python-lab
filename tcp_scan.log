@@ -19,3 +19,5 @@
 2026-01-07 01:17:17,545 - INFO - Starting scan on scanme.nmap.org for ports 80 with 10 threads.
 2026-01-07 01:17:17,629 - INFO - Port 80 on scanme.nmap.org is Open
 2026-01-07 01:17:17,630 - INFO - Scan completed in 0.08 seconds.
+2026-01-07 01:26:47,765 - INFO - Starting scan on scanme.nmap.org for ports 80 with 10 threads.
+2026-01-07 01:26:48,791 - INFO - Scan completed in 1.02 seconds.
