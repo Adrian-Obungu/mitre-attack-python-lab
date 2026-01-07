@@ -1,6 +1,55 @@
+# Local environment files
+.env
+.DS_Store
+*.pyc
+*.log
+*.sqlite3
+venv/
+
+# IDE files
+.idea/
+.vscode/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Pytest cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+
+# OS-specific files
+Thumbs.db
+.localized
+
+# Reports - do not commit generated reports
+reports/*.json
+reports/*.xml
+reports/*.md
+
+# Docker-related files
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.#*
+.goutputstream-*
+
 # Python
 __pycache__/
-*.py[cod]
-venv/
-.env
-logs/honeyresolver.log
+
+# macOS
+.DS_Store
+
+# Package-lock.json
+package-lock.json
+
+# test-report.xml
+test-report.xml
