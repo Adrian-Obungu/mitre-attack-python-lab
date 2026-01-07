@@ -171,6 +171,10 @@ class LogParser:
             self.parsed_entries.append(entry)
             self._update_statistics(entry)
 
+    def _get_threat_score(self, key: str, default: int = 0) -> int:
+        """Retrieves a threat score for a given key, with a default if not found."""
+        return self.threat_scores.get(key, default)
+
     def _apply_detection_rules(self, entry: Dict[str, Any], stats: Dict[str, Any]):
         """
         Takes a parsed log entry and the current statistics dictionary for a client IP.
