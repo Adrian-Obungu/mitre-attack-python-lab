@@ -102,6 +102,15 @@ class PathHijackDetector:
                 })
         return results
 
+    def scan(self) -> List[Dict[str, Any]]:
+        """
+        Scan for path hijacking vulnerabilities.
+        
+        Returns:
+            List of detection findings.
+        """
+        return self.run_all_checks()
+
     def run_all_checks(self) -> List[Dict[str, Any]]:
         """
         Runs all checks for path hijacking and returns the raw findings.

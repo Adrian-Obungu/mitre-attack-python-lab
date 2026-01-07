@@ -107,6 +107,15 @@ class ServiceScanner:
         return None
 
 
+    def scan(self) -> List[Dict[str, Any]]:
+        """
+        Scans for service misconfigurations.
+        
+        Returns:
+            A list of findings, where each finding is a dictionary.
+        """
+        return self.run_all_checks()
+
     def run_all_checks(self) -> List[Dict[str, Any]]:
         """
         Runs all configured service misconfiguration checks.

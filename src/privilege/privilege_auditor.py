@@ -9,19 +9,37 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 # Import helper modules
-from .path_hijack_detector import PathHijackDetector
-from .service_scanner import ServiceScanner
+try:
+    # Absolute import for when running as a package
+    from src.privilege.path_hijack_detector import PathHijackDetector
+    from src.privilege.service_scanner import ServiceScanner
+    from src.privilege.logon_script_detector import LogonScriptDetector
+except ImportError:
+    # Relative import for when running as a standalone script
+    from path_hijack_detector import PathHijackDetector
+    from service_scanner import ServiceScanner
+    from logon_script_detector import LogonScriptDetector
 
 # Conditional import for winreg - only available on Windows
 try:
     import winreg
 except ImportError:
     winreg = None
+# Setup basic logging for the module
+# This will be overridden by structured JSON logging in main application
+import logging
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     logger.warning("winreg module not available. Registry-based checks might be limited on this system.")
 
 # Setup basic logging for the module
 # This will be overridden by structured JSON logging in main application
-logger = logging.getLogger(__name__)
 if not logger.handlers:
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
@@ -53,6 +71,35 @@ class PrivilegeAuditor:
         self._setup_logging()
         self.path_hijack_detector = PathHijackDetector()
         self.service_scanner = ServiceScanner()
+
+
+    def scan(self):
+        """
+        Execute comprehensive privilege escalation scan
+        
+        Returns:
+            List of PrivilegeFinding objects
+        """
+        findings = []
+        
+        try:
+            # Check for path hijacking
+            path_findings = self.path_hijack_detector.scan()
+            findings.extend(path_findings)
+            
+            # Check service permissions
+            service_findings = self.service_scanner.scan()
+            findings.extend(service_findings)
+            
+            # Check logon scripts
+            logon_detector = LogonScriptDetector()
+            logon_findings = logon_detector.scan()
+            findings.extend(logon_findings)
+            
+        except Exception as e:
+            logger.error(f"Error during privilege scan: {e}")
+            
+        return findings
 
     def _setup_logging(self):
         """Sets up structured JSON logging for the auditor."""
