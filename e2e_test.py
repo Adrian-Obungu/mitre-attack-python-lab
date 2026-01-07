@@ -59,10 +59,9 @@ def test_api_endpoint():
     print('='*60)
     
     # Start API server in background
-    api_cmd_parts = [PYTHON_EXECUTABLE, "-m", "uvicorn", "api.main:app", "--port", "8000"]
+    api_cmd_parts = [PYTHON_EXECUTABLE, "-m", "uvicorn", "src.api.main:app", "--port", "8000"]
     api_process = subprocess.Popen(
         api_cmd_parts,
-        cwd="src",  # Run from the src directory
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
