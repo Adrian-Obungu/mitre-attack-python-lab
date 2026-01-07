@@ -55,11 +55,11 @@ class ServiceScanner:
                 if service_data:
                     parsed_services.append(service_data)
             return parsed_services
+        except FileNotFoundError:
+            logger.warning("wmic command not found. Service checks will be skipped.")
+            return []
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running WMIC command: {e.stderr}")
-            return []
-        except Exception as e:
-            logger.error(f"Failed to parse WMIC service output: {e}")
             return []
 
     def _check_unquoted_service_paths(self, service: Dict[str, str]) -> Optional[Dict[str, Any]]:
