@@ -3,9 +3,12 @@ import json
 import logging
 import platform
 import subprocess
-import xml.etree.ElementTree as ET
+import re
+import defusedxml.ElementTree as ET
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+import csv # Import csv
+from io import StringIO # Import StringIO
 
 # Conditional import for winreg as it's Windows-specific
 if platform.system() == "Windows":
@@ -72,7 +75,14 @@ class PersistenceAuditor:
             True if the entry is allowlisted, False otherwise.
         """
         allowlist_entries = self.allowlist.get(technique_category, [])
-        return any(entry_value.lower() in item.lower() for item in allowlist_entries)
+        
+        # Extract filename from path if entry_value looks like a path
+        filename = os.path.basename(entry_value).lower()
+        
+        for item in allowlist_entries:
+            if filename == item.lower() or entry_value.lower() in item.lower():
+                return True
+        return False
 
     def _assign_risk(self, entry_path: str, is_allowlisted: bool) -> str:
         """
@@ -231,35 +241,33 @@ class PersistenceAuditor:
             )
             tasks_csv = result.stdout.strip()
             
-            # Manually parse CSV to handle potential issues with CSV module and subprocess
-            # Expected format: HostName,TaskName,Next Run Time,Status,Logon Mode,Last Run Time,Last Result,Author,Run As User,Task To Run,Start In,Comment,Scheduled Task State,Idle Time,Power Management,Run As User,Delete Task If Not Run,Run For,Repeat: Every,Repeat: Until: Time,Repeat: Until: Date,Schedule,Schedule Type,Start Date,Start Time,Months,Days,Day of Week,Weeks,Enabled,Run Online,Hidden,Run X times,Delete Task After X times
-            # We are interested in TaskName, Author, Task To Run (command)
+            # Use StringIO to treat the string as a file
+            csv_file = StringIO(tasks_csv)
+            # Create a CSV reader. Schtasks output uses "," as delimiter.
+            reader = csv.reader(csv_file)
             
-            # Simplified parsing - relies on stable field order from schtasks /query /v /fo csv
-            # We need to find the indices of "TaskName", "Author", "Task To Run"
-            # Since /nh is used, we have to assume the order or parse headers if not /nh.
-            # Based on documentation and typical output:
-            # Index 1: TaskName, Index 7: Author, Index 9: Task To Run (command)
+            # Skip the header row
+            next(reader, None) 
+            
             scheduled_tasks = []
-            for line in tasks_csv.splitlines():
-                if not line.strip():
-                    continue
-                parts = line.split('","') # Split by "," to handle quoted fields
-                
-                # Clean up quotes from parts
-                parts = [p.strip('"') for p in parts]
-
+            for row in reader:
+                # Expected format: HostName,TaskName,Next Run Time,Status,Logon Mode,Last Run Time,Last Result,Author,Run As User,Task To Run,Start In,Comment,...
+                # We are interested in TaskName (index 1), Author (index 7), Task To Run (command) (index 9)
                 try:
-                    task_name = parts[1]
-                    author = parts[7]
-                    command = parts[9]
-                    scheduled_tasks.append({
-                        "task_name": task_name,
-                        "creator": author,
-                        "command": command
-                    })
+                    # Ensure the row has enough columns
+                    if len(row) > 9:
+                        task_name = row[1].strip()
+                        author = row[7].strip()
+                        command = row[9].strip()
+                        scheduled_tasks.append({
+                            "task_name": task_name,
+                            "creator": author,
+                            "command": command
+                        })
+                    else:
+                        logger.warning(f"Skipping malformed scheduled task row: {row}")
                 except IndexError:
-                    logger.warning(f"Failed to parse scheduled task line: {line[:100]}...")
+                    logger.warning(f"Failed to parse scheduled task line (IndexError): {row}")
             
             return scheduled_tasks
         except subprocess.CalledProcessError as e:
@@ -294,33 +302,26 @@ class PersistenceAuditor:
             event_xml = result.stdout.strip()
 
             subscriptions = []
-            root = ET.fromstring(f"<Events>{event_xml}</Events>") # Wrap in <Events> for valid XML
-            for event in root.findall(".//Event"):
-                event_id = event.findtext(".//EventID")
+            root = ET.fromstring(event_xml)
+            
+            # Define XML namespace URI
+            win_ns = 'http://schemas.microsoft.com/win/2004/08/events/event'
+
+            for event in root.findall(f"{{{win_ns}}}Event"):
+                event_id = event.findtext(f"{{{win_ns}}}System/{{{win_ns}}}EventID")
                 
                 if event_id == "5861":
                     consumer_command = "N/A"
                     filter_query = "N/A"
 
-                    # Extract properties from EventData
-                    for data in event.findall(".//EventData/Data"):
+                    # EventData is not prefixed with 'win:'
+                    for data in event.findall(f"{{{win_ns}}}EventData/{{{win_ns}}}Data"):
                         name = data.get("Name")
                         if name == "ConsumerCommandLineTemplate":
                             consumer_command = data.text
                         elif name == "FilterQuery":
                             filter_query = data.text
-
-                    # Also look for the 'Destination' property in newer WMI activity logs
-                    # This might be in different places depending on the WMI consumer type
-                    # For ActiveScriptEventConsumer, the script text might be in Arguments
                     
-                    # More robust parsing would involve looking for
-                    # <Property Name="ConsumerCommandLineTemplate">...</Property>
-                    # <Property Name="FilterQuery">...</Property>
-                    # <Property Name="ConsumerName">...</Property>
-                    # This information is typically within <EventData> properties.
-
-                    # For simplicity, we are capturing common command line consumer.
                     if consumer_command != "N/A":
                         subscriptions.append({
                             "event_id": event_id,
