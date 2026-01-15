@@ -1,0 +1,37 @@
+{
+  "files_exist": {
+    "src/privilege/privilege_auditor.py": true,
+    "src/privilege/path_hijack_detector.py": true,
+    "src/privilege/service_scanner.py": true,
+    "src/privilege/logon_script_detector.py": true,
+    "src/api/main.py": true,
+    "src/api/routes/privilege_routes.py": true,
+    "Dockerfile": true,
+    "requirements.txt": true
+  },
+  "imports_work": [],
+  "syntax_errors": [
+    "Dockerfile: Syntax error: invalid decimal literal (Dockerfile, line 42)",
+    "requirements.txt: Syntax error: invalid syntax (requirements.txt, line 1)"
+  ],
+  "import_issues": {
+    "privilege_auditor.py": [
+      "Line 1: Relative import may fail when run directly - import os",
+      "Line 2: Relative import may fail when run directly - import sys",
+      "Line 12: Absolute import in module - from src.privilege.path_hijack_detector import PathHijackDetector",
+      "Line 13: Absolute import in module - from src.privilege.service_scanner import ServiceScanner",
+      "Line 89: Absolute import in module - from src.privilege.logon_script_detector import LogonScriptDetector"
+    ]
+  },
+  "missing_methods": {
+    "src/privilege/path_hijack_detector.py:PathHijackDetector": [
+      "scan"
+    ],
+    "src/privilege/service_scanner.py:ServiceScanner": [
+      "scan"
+    ]
+  },
+  "current_errors": [
+    "privilege_auditor.py --help failed: Traceback (most recent call last):\n  File \"C:\\Users\\Adrian Obu\\mitre-attack-python-lab\\src\\privilege\\privilege_auditor.py\", line 12, in <module>\n    from src.privilege.path_hijack_detector import Path"
+  ]
+}

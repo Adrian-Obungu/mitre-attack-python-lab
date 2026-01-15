@@ -5,17 +5,25 @@ Comprehensive environment validation for MITRE ATT&CK Lab - Windows Fixed
 import sys
 import subprocess
 import os
+from typing import List
 
-# Get absolute path to venv python
-VENV_PYTHON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "venv", "Scripts", "python.exe")
+# Determine the correct Python executable for the virtual environment
+# sys.executable is the path to the Python interpreter running this script
+VENV_PYTHON = sys.executable
 
-def run_command(cmd):
+def run_command(cmd_args: List[str], check: bool = True):
     """Run command and return result"""
     try:
-        # Use absolute path for python
-        cmd = cmd.replace("venv/Scripts/python", f'"{VENV_PYTHON}"')
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # If the first argument is a Python script, ensure it's executed with the current venv Python
+        if cmd_args and cmd_args[0].endswith(".py"):
+            processed_cmd_args = [VENV_PYTHON] + cmd_args
+        else:
+            processed_cmd_args = cmd_args
+
+        result = subprocess.run(processed_cmd_args, capture_output=True, text=True, check=check)
         return result.returncode, result.stdout, result.stderr
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout, e.stderr
     except Exception as e:
         return 1, "", str(e)
 
@@ -24,7 +32,7 @@ def check_python_environment():
     print("=== PYTHON ENVIRONMENT ===")
     
     # Check Python version using absolute path
-    code, out, err = run_command(f'"{VENV_PYTHON}" --version')
+    code, out, err = run_command(["--version"])
     print(f"Python Version: {out.strip() if code == 0 else 'ERROR: ' + err}")
     
     # Check core imports
@@ -39,7 +47,7 @@ def check_python_environment():
     
     print("\n=== CORE IMPORTS ===")
     for imp in test_imports:
-        code, out, err = run_command(f'"{VENV_PYTHON}" -c "{imp}; print(\"✅ {imp.split()[1]}\")"')
+        code, out, err = run_command(["-c", f"{imp}; print(\"✅ {imp.split()[1]}\")"])
         if code == 0:
             print(out.strip())
         else:
@@ -51,7 +59,7 @@ def check_core_modules():
     
     # Test TCP scanner
     print("Testing TCP Scanner...")
-    code, out, err = run_command(f'"{VENV_PYTHON}" src/reconnaissance/tcp_connect_scan.py scanme.nmap.org -p 80 --timeout 2')
+    code, out, err = run_command(["src/reconnaissance/tcp_connect_scan.py", "scanme.nmap.org", "-p", "80", "--timeout", "2"])
     if code == 0 and "Open" in out:
         print("✅ TCP Scanner: Functional")
     else:
@@ -61,7 +69,7 @@ def check_core_modules():
     print("\nTesting DNS Recon...")
     # First check wordlist exists
     if os.path.exists("config/common_subdomains.txt"):
-        code, out, err = run_command(f'"{VENV_PYTHON}" src/reconnaissance/dns_recon.py -d github.com -w config/common_subdomains.txt -t 1 --timeout 2')
+        code, out, err = run_command(["src/reconnaissance/dns_recon.py", "-d", "github.com", "-w", "config/common_subdomains.txt", "-t", "1", "--timeout", "2"])
         if code == 0:
             print("✅ DNS Recon: Functional")
         else:
@@ -71,7 +79,7 @@ def check_core_modules():
     
     # Test Persistence Auditor
     print("\nTesting Persistence Auditor...")
-    code, out, err = run_command(f'"{VENV_PYTHON}" src/persistence/persistence_auditor.py --help')
+    code, out, err = run_command(["src/persistence/persistence_auditor.py", "--help"])
     if code == 0:
         print("✅ Persistence Auditor: Functional")
     else:
@@ -95,7 +103,7 @@ def check_api_server():
     
     # Test health endpoint
     print("Testing API health...")
-    code, out, err = run_command('curl -s -H "X-API-Key: test-key-123" http://localhost:8082/health')
+    code, out, err = run_command(["curl", "-s", "-H", "X-API-Key: test-key-123", "http://localhost:8082/health"])
     if code == 0 and '"status":"healthy"' in out:
         print("✅ API Health: Functional")
     else:
@@ -103,7 +111,7 @@ def check_api_server():
     
     # Test scanner endpoint
     print("Testing API scanner...")
-    code, out, err = run_command('curl -s -H "X-API-Key: test-key-123" -H "Content-Type: application/json" -X POST http://localhost:8082/scan -d \'{"target":"scanme.nmap.org","ports":"80","scan_type":"connect"}\'')
+    code, out, err = run_command(["curl", "-s", "-H", "X-API-Key: test-key-123", "-H", "Content-Type: application/json", "-X", "POST", "http://localhost:8082/scan", "-d", '{"target":"scanme.nmap.org","ports":"80","scan_type":"connect"}'])
     if code == 0 and '"status"' in out:
         print("✅ API Scanner: Functional")
     else:

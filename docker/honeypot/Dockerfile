@@ -25,6 +25,12 @@ FROM python:3.9-slim as runtime
 
 WORKDIR /app
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user and group
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
 # Copy installed dependencies and application code
 # Using python3.9 path is more robust than a specific micro version
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
@@ -32,12 +38,15 @@ COPY --from=builder /app/src/defense/HoneyResolver_Enhanced.py src/defense/Honey
 COPY --from=builder /app/config/honeypot_config.json config/honeypot_config.json
 RUN mkdir -p logs/ # Ensure logs directory exists for FileHandler
 
+# Change ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
+
 # Expose ports
 EXPOSE 8053
-EXPOSE 8000 # For health checks / metrics (will be added later)
-
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+EXPOSE 8000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:8000/health || exit 1

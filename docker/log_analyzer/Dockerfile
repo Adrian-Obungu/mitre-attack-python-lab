@@ -28,12 +28,21 @@ FROM python:3.9-slim as runtime
 
 WORKDIR /app
 
+# Create a non-root user and group
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
 # Copy installed dependencies and application code
 # Using python3.9 path is more robust than a specific micro version
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=builder /app/src/utils/log_parser.py src/utils/log_parser.py
 COPY --from=builder /app/config/threat_scores.json config/threat_scores.json
 RUN mkdir -p logs/ # Ensure logs directory exists for accessing log files
+
+# Change ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
 
 # Set up entrypoint for the log analyzer
 ENTRYPOINT ["python", "src/utils/log_parser.py"]

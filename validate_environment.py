@@ -5,12 +5,27 @@ Comprehensive environment validation for MITRE ATT&CK Lab
 import sys
 import subprocess
 import os
+from typing import List
 
-def run_command(cmd):
+def run_command(command_args: List[str], check: bool = True):
     """Run command and return result"""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # Determine the correct Python executable for the virtual environment
+        VENV_PYTHON = sys.executable
+
+        # If the first argument is a Python script, ensure it's executed with the current venv Python
+        if command_args and command_args[0].endswith(".py"):
+            processed_command_args = [VENV_PYTHON] + command_args
+        # If the command itself is 'python', replace it with VENV_PYTHON for consistency
+        elif command_args and command_args[0] == "python":
+            processed_command_args = [VENV_PYTHON] + command_args[1:]
+        else:
+            processed_command_args = command_args
+
+        result = subprocess.run(processed_command_args, capture_output=True, text=True, check=check)
         return result.returncode, result.stdout, result.stderr
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout, e.stderr
     except Exception as e:
         return 1, "", str(e)
 
@@ -19,7 +34,7 @@ def check_python_environment():
     print("=== PYTHON ENVIRONMENT ===")
     
     # Check Python version
-    code, out, err = run_command("venv/Scripts/python --version")
+    code, out, err = run_command(["python", "--version"])
     print(f"Python Version: {out.strip() if code == 0 else 'ERROR'}")
     
     # Check core imports
@@ -34,7 +49,7 @@ def check_python_environment():
     
     print("\n=== CORE IMPORTS ===")
     for imp in test_imports:
-        code, out, err = run_command(f'venv/Scripts/python -c "{imp}; print(\"✅ {imp.split()[1]}\")"')
+        code, out, err = run_command(["python", "-c", f"{imp}; print(\"✅ {imp.split()[1]}\")"])
         if code == 0:
             print(out.strip())
         else:
@@ -46,7 +61,7 @@ def check_core_modules():
     
     # Test TCP scanner
     print("Testing TCP Scanner...")
-    code, out, err = run_command('venv/Scripts/python src/reconnaissance/tcp_connect_scan.py scanme.nmap.org -p 80 --timeout 2')
+    code, out, err = run_command(["src/reconnaissance/tcp_connect_scan.py", "scanme.nmap.org", "-p", "80", "--timeout", "2"])
     if code == 0 and "Open" in out:
         print("✅ TCP Scanner: Functional")
     else:

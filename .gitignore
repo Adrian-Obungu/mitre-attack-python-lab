@@ -53,3 +53,5 @@ package-lock.json
 
 # test-report.xml
 test-report.xml
+.gemini/
+gha-creds-*.json

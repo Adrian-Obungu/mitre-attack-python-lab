@@ -58,7 +58,7 @@ def is_admin():
 def validate_target(target):
     """Validate the target to be a valid IP address or hostname."""
     ip_pattern = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
-    hostname_pattern = re.compile(r"^[a-zA-Z0-9.-]+$")
+    hostname_pattern = re.compile(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     if ip_pattern.match(target) or hostname_pattern.match(target):
         return True
     return False
@@ -229,7 +229,7 @@ class PortScanner:
             try:
                 answers = resolver.resolve(target_domain, record_type)
                 results[record_type] = [str(rdata) for rdata in answers]
-            except exception.NoAnswer:
+            except resolver.NoAnswer:
                 results[record_type] = ["No records found."]
             except exception.NXDOMAIN:
                 logger.error(f"Domain '{target_domain}' does not exist.")

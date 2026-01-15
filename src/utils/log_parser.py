@@ -142,34 +142,28 @@ class LogParser:
             for line in f:
                 self._parse_log_line(line)
         logger.info(f"Finished parsing. Total entries: {len(self.parsed_entries)}")
+        return self.parsed_entries
 
     def _parse_log_line(self, line: str):
         """
-        Parses a single log line and extracts relevant information.
-        This version uses a specific regex to avoid ReDoS vulnerabilities.
+        Parses a single JSON log line and extracts relevant information.
         """
-        # This regex is tailored to the log format from HoneyResolver_Enhanced.py
-        # Format: Query from {client_ip}: '{sanitized_qname}' (Type: {qtype}) -> {response_ip} ({category})
-        log_pattern = re.compile(
-            r"Query from\s+([^:]+):\s+'([^']*)'\s+\(Type:\s+(\w+)\)\s+->\s+[^\s]+\s+\((real|fake|random)\)"
-        )
-        match = log_pattern.search(line)
-
-        if match:
-            client_ip = match.group(1)
-            qname = match.group(2).lower().strip('.')
-            qtype = match.group(3)
-            category = match.group(4)
-
-            entry = {
-                "client_ip": client_ip,
-                "qname": qname,
-                "qtype": qtype,
-                # A honeypot hit is now determined by the 'category' in the log
-                "is_honeypot_hit": category in ['fake', 'random']
-            }
-            self.parsed_entries.append(entry)
-            self._update_statistics(entry)
+        try:
+            log_data = json.loads(line)
+            
+            # Check if it's a query log
+            if 'qname' in log_data and 'client_ip' in log_data:
+                entry = {
+                    "client_ip": log_data["client_ip"],
+                    "qname": log_data["qname"],
+                    "qtype": log_data["qtype"],
+                    "is_honeypot_hit": log_data.get("category") in ['fake', 'random']
+                }
+                self.parsed_entries.append(entry)
+                self._update_statistics(entry)
+        except json.JSONDecodeError:
+            # Not a json line, ignore
+            pass
 
     def _get_threat_score(self, key: str, default: int = 0) -> int:
         """Retrieves a threat score for a given key, with a default if not found."""

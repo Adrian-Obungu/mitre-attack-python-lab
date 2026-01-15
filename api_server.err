@@ -1,0 +1,6 @@
+2026-01-10 21:34:43,628 - __main__ - INFO - Starting API server on port 8080
+INFO:     Started server process [27088]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+2026-01-10 21:35:07,478 - __main__ - WARNING - Could not reach Honeypot metrics at http://localhost:8000

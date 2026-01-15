@@ -241,7 +241,7 @@ class PrivilegeAuditor:
         try:
             result = subprocess.run(
                 ["schtasks", "/query", "/FO", "LIST", "/V"],
-                capture_output=True, text=True, check=True, shell=True
+                capture_output=True, text=True, check=True
             )
             tasks_raw = result.stdout.strip().split('\n\n')
 
@@ -405,7 +405,7 @@ class JsonFormatter(logging.Formatter):
             "filename": record.filename,
             "lineno": record.lineno,
         }
-        if hasattr(record, 'extra'): # Capture extra dict for custom fields
+        if hasattr(record, 'extra') and record.extra is not None: # Capture extra dict for custom fields
             log_record.update(record.extra)
         
         # Add any extra dictionary values passed in record.msg if it's a dict

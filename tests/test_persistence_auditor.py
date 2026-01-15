@@ -12,18 +12,18 @@ from src.persistence.persistence_auditor import PersistenceAuditor
 
 # Mock data for Windows-specific functions
 MOCK_REGISTRY_RUN_KEYS = {
-    (unittest.mock.ANY, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run"): {
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run": {
         "SecurityHealth": "C:\\Windows\\system32\\SecurityHealthSystray.exe",
         "OneDrive": "C:\\Users\\User\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe /background",
     },
-    (unittest.mock.ANY, r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"): {},
-    (unittest.mock.ANY, r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices"): {},
-    (unittest.mock.ANY, r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce"): {},
-    (unittest.mock.ANY, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows"): {}, # AppInit_DLLs
-    (unittest.mock.ANY, r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"): {}, # 32-bit Run key
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce": {},
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices": {},
+    r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce": {},
+    r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows": {}, # AppInit_DLLs
+    r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run": {}, # 32-bit Run key
 }
 
-MOCK_SCHTASKS_CSV = """
+MOCK_SCHTASKS_CSV = r"""
 "HostName","TaskName","Next Run Time","Status","Logon Mode","Last Run Time","Last Result","Author","Run As User","Task To Run","Start In","Comment","Scheduled Task State","Idle Time","Power Management","Run As User","Delete Task If Not Run","Run For","Repeat: Every","Repeat: Until: Time","Repeat: Until: Date","Schedule","Schedule Type","Start Date","Start Time","Months","Days","Day of Week","Weeks","Enabled","Run Online","Hidden","Run X times","Delete Task After X times"
 "DESKTOP-123","\Microsoft\Windows\Setup\SetupUIGuard","N/A","Ready","Interactive/Background","N/A","0","Microsoft","NT AUTHORITY\SYSTEM","C:\\Windows\\system32\\SetupUIGuard.exe","C:\\Windows\\System32\\","","Enabled","PT10M","","","False","0",,"","","At system startup","On startup","","","","","","","True","False","False","0","False"
 "DESKTOP-123","\AdobeAAMUpdater-1.0-Microsoft\AdobeARM","N/A","Ready","Interactive/Background","N/A","0","Adobe","User","C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\AdobeARM.exe","C:\\Program Files (x86)\\Common Files\\Adobe\\ARM\\1.0\\","","Enabled","PT1H","","","False","0",,"","","Daily","Daily","1/1/2023","12:00:00 AM","","","","","True","False","False","0","False"
@@ -63,7 +63,7 @@ def mock_persistence_auditor():
     """Fixture to create a PersistenceAuditor instance with a mock allowlist."""
     mock_allowlist = {
         "registry_autoruns": ["SecurityHealthSystray.exe", "RtkAudUService64.exe"],
-        "scheduled_tasks": ["AdobeAAMUpdater-1.0-Microsoft\AdobeARM"],
+        "scheduled_tasks": ["AdobeAAMUpdater-1.0-Microsoft\\AdobeARM"],
         "wmi_subscriptions": ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"]
     }
     with unittest.mock.patch('builtins.open', unittest.mock.mock_open(read_data=json.dumps(mock_allowlist))):
@@ -148,13 +148,13 @@ class TestPersistenceAuditor:
     def test_audit_method(self, mock_get_wmi, mock_get_scheduled, mock_get_registry, mock_persistence_auditor):
         """Test the main audit method."""
         mock_get_registry.return_value = [
-            {"key": "HKLM\Run", "name": "SystemApp", "value": "C:\\Windows\\System32\\SystemApp.exe"},
-            {"key": "HKCU\Run", "name": "UserApp", "value": "C:\\Users\\User\\AppData\\Local\\UserApp.exe"},
-            {"key": "HKLM\Run", "name": "SecurityHealth", "value": "C:\\Windows\\system32\\SecurityHealthSystray.exe"},
+            {"key": r"HKLM\Run", "name": "SystemApp", "value": "C:\\Windows\\System32\\SystemApp.exe"},
+            {"key": r"HKCU\Run", "name": "UserApp", "value": "C:\\Users\\User\\AppData\\Local\\UserApp.exe"},
+            {"key": r"HKLM\Run", "name": "SecurityHealth", "value": "C:\\Windows\\system32\\SecurityHealthSystray.exe"},
         ]
         mock_get_scheduled.return_value = [
-            {"task_name": "\Microsoft\Windows\Setup\SetupUIGuard", "creator": "Microsoft", "command": "C:\\Windows\\system32\\SetupUIGuard.exe"},
-            {"task_name": "\MyMaliciousTask", "creator": "User", "command": "C:\\Users\\User\\AppData\\Roaming\\Malware\\malware.exe"},
+            {"task_name": r"\Microsoft\Windows\Setup\SetupUIGuard", "creator": "Microsoft", "command": "C:\\Windows\\system32\\SetupUIGuard.exe"},
+            {"task_name": r"\MyMaliciousTask", "creator": "User", "command": "C:\\Users\\User\\AppData\\Roaming\\Malware\\malware.exe"},
         ]
         mock_get_wmi.return_value = [
             {"event_id": "5861", "filter_query": "Filter1", "consumer_command": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"},
@@ -163,6 +163,7 @@ class TestPersistenceAuditor:
 
         auditor = mock_persistence_auditor
         report = auditor.audit()
+        # print(f"Generated Audit Report: {json.dumps(report, indent=2)}") # Debug print
 
         assert len(report) == 7
 

@@ -7,12 +7,17 @@ import requests
 import signal
 
 # --- Helper Functions ---
-def run_command(command, shell=True, capture_output=True, text=True, check=False, cwd=None):
-    """Helper function to run shell commands."""
+def run_command(command: List[str], capture_output=True, text=True, check=False, cwd=None):
+    """Helper function to run commands as a list of arguments."""
     try:
+        # If the first argument is a Python script, ensure it's executed with the current venv Python
+        if command and command[0].endswith(".py"):
+            processed_command = [sys.executable] + command
+        else:
+            processed_command = command
+
         process = subprocess.run(
-            command,
-            shell=shell,
+            processed_command,
             capture_output=capture_output,
             text=text,
             check=check,
@@ -20,26 +25,31 @@ def run_command(command, shell=True, capture_output=True, text=True, check=False
         )
         return process
     except subprocess.CalledProcessError as e:
-        print(f"Error executing command: {command}")
+        print(f"Error executing command: {' '.join(command)}")
         print(f"Stdout: {e.stdout}")
         print(f"Stderr: {e.stderr}")
         raise
 
-def start_background_process(command, cwd=None, env=None):
+def start_background_process(command_args: List[str], cwd=None, env=None):
     """Starts a process in the background and returns the process object."""
-    print(f"Starting background process: {command}")
-    # Important: if running a shell script, it needs to be executable
+    print(f"Starting background process: {' '.join(command_args)}")
+    
+    # If the first argument is a Python script, ensure it's executed with the current venv Python
+    if command_args and command_args[0].endswith(".py"):
+        processed_command_args = [sys.executable] + command_args
+    else:
+        processed_command_args = command_args
+
     process = subprocess.Popen(
-        command,
-        shell=True,
+        processed_command_args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=cwd,
-        env=env
+        env=env,
+        text=True # Ensure output is text
     )
     time.sleep(5) # Give process time to start
     return process
-
 def terminate_process(process, name="process"):
     """Terminates a background process."""
     print(f"Terminating {name} (PID: {process.pid})...")
@@ -67,7 +77,7 @@ def check_log_parser_help():
     # We assume setup_foundation.sh has been run, so 'python' command refers to venv python.
     # The sys.path adjustment is now handled internally by log_parser.py if run as __main__.
     
-    result = run_command("python src/utils/log_parser.py --help")
+    result = run_command(["src/utils/log_parser.py", "--help"])
     if result.returncode == 0 and "usage: log_parser.py" in result.stdout:
         print("✅ 'log_parser.py --help' works without ModuleNotFoundError.")
     else:
@@ -93,10 +103,7 @@ def test_api_scanner_endpoint():
     else:
         print("Warning: .env file not found. API authentication might fail if API_KEY is not set globally.")
 
-    api_process = start_background_process(
-        "python -m uvicorn src.api_server:app --port 8080",
-        env=current_env
-    )
+    api_process = start_background_process([sys.executable, "-m", "uvicorn", "src.api_server:app", "--port", "8080"], env=current_env)
 
     try:
         print("Triggering scanner endpoint...")
@@ -167,10 +174,7 @@ def test_honeyresolver_ports_again():
         print("Warning: .env file not found. HoneyResolver might use default config values.")
 
 
-    honeyresolver_process = start_background_process(
-        "python src/defense/HoneyResolver_Enhanced.py --domain test.local --port 53535",
-        env=current_env
-    )
+    honeyresolver_process = start_background_process(["src/defense/HoneyResolver_Enhanced.py", "--domain", "test.local", "--port", "53535"], env=current_env)
 
     try:
         print("Checking health endpoint on port 8000...")
@@ -202,7 +206,7 @@ def test_git_status_clean():
 
     # We expect .env, venv/, logs/, *.log files to be ignored.
     # The .gitignore should handle this.
-    result = run_command("git status --short")
+    result = run_command(["git", "status", "--short"])
 
     if not result.stdout.strip():
         print("✅ Git working tree is clean.")

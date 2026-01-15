@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user and group
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
 # Copy requirements file and install Python dependencies
 # Using config/requirements.txt which contains all dependencies
 COPY config/requirements.txt ./config/
@@ -29,6 +32,12 @@ COPY config/threat_scores.json config/threat_scores.json
 
 # Ensure logs directory exists for log_parser
 RUN mkdir -p logs/
+
+# Change ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
 
 # Expose the API server port
 # API_SERVER_PORT defaults to 8080, but can be set via env var

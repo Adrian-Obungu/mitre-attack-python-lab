@@ -32,14 +32,13 @@ class ServiceScanner:
         if not self._is_windows():
             return []
 
-        command = 'wmic service get Name,PathName,StartMode,State /format:list'
+        command = ['wmic', 'service', 'get', 'Name,PathName,StartMode,State', '/format:list']
         try:
             result = subprocess.run(
                 command,
                 capture_output=True,
                 text=True,
-                check=True,
-                shell=True
+                check=True
             )
             
             services_raw = result.stdout.strip().split('\n\n')
