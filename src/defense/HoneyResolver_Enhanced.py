@@ -5,7 +5,7 @@ Author: Adrian S. Obungu
 """
 
 import time
-import random
+import secrets
 import logging
 import json
 import os
@@ -152,7 +152,7 @@ class EnhancedHoneyResolver:
         if subdomain_lower in self.config["FAKE_SUBDOMAINS"]:
             return self.config["FAKE_SUBDOMAINS"][subdomain_lower], "fake"
         
-        random_ip = f"10.0.2.{random.randint(1, 254)}"
+        random_ip = f"10.0.2.{secrets.randbelow(254) + 1}"
         return random_ip, "random"
     
     def resolve(self, request, handler):
@@ -201,7 +201,7 @@ class EnhancedHoneyResolver:
             if qtype == QTYPE.A:
                 reply.add_answer(RR(rname=qname, rtype=QTYPE.A, rclass=1, ttl=300, rdata=A(response_ip)))
             elif qtype == QTYPE.AAAA:
-                fake_ipv6 = f"2001:db8::{random.randint(1, 65535):x}:{random.randint(1, 65535):x}"
+                fake_ipv6 = f"2001:db8::{secrets.randbelow(65535) + 1:x}:{secrets.randbelow(65535) + 1:x}"
                 reply.add_answer(RR(rname=qname, rtype=QTYPE.AAAA, rclass=1, ttl=300, rdata=AAAA(fake_ipv6)))
             elif qtype == QTYPE.MX:
                 reply.add_answer(RR(rname=qname, rtype=QTYPE.MX, rclass=1, ttl=300, rdata=MX(10, f"mail.{self.config['HONEYPOT_DOMAIN']}.")))

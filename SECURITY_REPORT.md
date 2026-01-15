@@ -102,7 +102,6 @@ The following potential secrets were identified:
 *   **Hardcoded Docker Credential (`tools\README.md`) - STATUS: NOT FOUND**
     *   **File:** `tools\README.md`
     *   **Severity:** High
-    *   **Description:** A hardcoded Docker credential (`AzureDiamond:hunter2`) was initially flagged.
     *   **Remediation Status:** Upon inspection, no actual hardcoded Docker credentials were found in `tools/README.md`. The file primarily contains documentation on configuring Docker, not actual secrets.
     *   **MITRE ATT&CK Mapping:** T1552.001 - Unsecured Credentials: Credential in Configuration File, T1078.004 - Valid Accounts: Cloud Accounts
 
