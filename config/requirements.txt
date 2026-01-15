@@ -1,9 +1,10 @@
 # Core Dependencies
-scapy>=2.5.0
+scapy>=2.7.0
+urllib3>=2.6.0
 dnslib>=0.9.19
-dnspython>=2.4.2
+dnspython>=2.8.0
 google-generativeai>=0.3.0
-fastapi>=0.104.1
+fastapi>=0.128.0
 uvicorn>=0.23.2
 httpx>=0.25.1
 
