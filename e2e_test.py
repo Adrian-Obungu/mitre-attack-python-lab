@@ -29,7 +29,7 @@ def run_command(cmd_parts, check=True):
     except subprocess.CalledProcessError as e:
         return e.returncode, e.stdout, e.stderr
 
-def test_module(module_name, args=""):
+def _test_module_helper(module_name, args=""):
     """Test a specific module"""
     print(f"\n{'='*60}")
     print(f"Testing: {module_name}")
@@ -148,7 +148,7 @@ def main():
     
     success_count = 0
     for module, args in modules:
-        if test_module(module, args):
+        if _test_module_helper(module, args):
             success_count += 1
     
     # Test API
