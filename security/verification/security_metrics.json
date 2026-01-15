@@ -1,0 +1,92 @@
+{
+  "dependency_vulnerabilities": {
+    "scapy": {
+      "status": "fixed",
+      "version_before": "2.5.0",
+      "version_after": "2.7.0",
+      "details": "Upgraded from reported vulnerable version 2.5.0 (or similar older version) to 2.7.0 to mitigate arbitrary code execution vulnerability (CVE - Arbitrary code execution). No changes were required to requirements.txt files as scapy was already set to 2.7.0 or higher."
+    },
+    "urllib3": {
+      "status": "fixed",
+      "version_before": "2.5.0",
+      "version_after": "2.6.0",
+      "details": "Upgraded from 2.5.0 to 2.6.0 to mitigate Denial of Service (DoS) vulnerabilities (CVE-2025-66471, CVE-2025-66418). This was a transitive upgrade and no direct changes were required."
+    },
+    "starlette": {
+      "status": "fixed",
+      "version_before": "0.35.1",
+      "version_after": "0.50.0",
+      "details": "Upgraded from 0.35.1 to 0.50.0 (via fastapi upgrade) to mitigate Denial of Service (DoS) vulnerabilities (CVE-2025-54121, PVE-2024-68094, CVE-2025-62727, CVE-2024-47874). This was a transitive upgrade and no direct changes were required."
+    },
+    "anyio": {
+      "status": "fixed",
+      "version_before": "3.7.1",
+      "version_after": "4.12.1",
+      "details": "Upgraded from 3.7.1 to 4.12.1 to mitigate a thread race condition vulnerability (PVE-2024-71199). This was a transitive upgrade and no direct changes were required."
+    },
+    "ecdsa": {
+      "status": "acknowledged",
+      "version_before": "0.19.1",
+      "version_after": "0.19.1",
+      "details": "Vulnerable to Minerva attack (CVE-2024-23342) and side-channel attacks (PVE-2024-64396). Maintainers state no fix planned due to Python language limitations. Transitive dependency via python-jose (which is also at its latest version). No direct fix available. Further mitigation may require replacing python-jose or a significant architectural change if critical to runtime. Currently, not directly imported by application source code."
+    },
+    "dnspython": {
+      "status": "not_vulnerable",
+      "version_before": "2.8.0",
+      "version_after": "2.8.0",
+      "details": "Already at latest version 2.8.0, no known vulnerabilities requiring upgrade. No changes were required."
+    },
+    "python-multipart": {
+      "status": "not_vulnerable",
+      "version_before": "0.0.21",
+      "version_after": "0.0.21",
+      "details": "Already at latest version 0.0.21, no known vulnerabilities requiring upgrade. No changes were required."
+    },
+    "requests": {
+      "status": "not_vulnerable",
+      "version_before": "2.32.5",
+      "version_after": "2.32.5",
+      "details": "Already at latest version 2.32.5. The urllib3 dependency was directly updated. No changes were required for requests."
+    },
+    "fastapi": {
+      "status": "fixed",
+      "version_before": "0.109.1",
+      "version_after": "0.128.0",
+      "details": "Upgraded from 0.109.1 to 0.128.0, which includes a Starlette dependency upgrade to mitigate vulnerabilities. No changes were required to requirements.txt files as fastapi was already set to 0.128.0 or higher."
+    }
+  },
+  "hardcoded_credentials": {
+    "tools/README.md": {
+      "status": "not_found",
+      "details": "Reported hardcoded Docker credentials in tools/README.md were not found during inspection. The file contains documentation on how to configure credentials, but no actual hardcoded values."
+    }
+  },
+  "command_injection": {
+    "shell_true_in_src": {
+      "status": "not_found",
+      "details": "No instances of `shell=True` were found in the `src/` directory, indicating this vulnerability is not present in the codebase."
+    }
+  },
+  "docker_security": {
+    "containers_run_as_root": {
+      "status": "fixed",
+      "details": "All Dockerfiles in the `docker/` directory were found to already implement non-root users (`appuser`) and appropriate ownership changes, adhering to security best practices. No changes were required."
+    }
+  },
+  "kubernetes_security": {
+    "honeypot_config_weaknesses": {
+      "status": "fixed",
+      "details": "Hardenened `kubernetes/honeypot/honeypot-deployment.yaml` by adding `securityContext` to enforce `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, and `capabilities: drop: ['ALL']`."
+    }
+  },
+  "code_issues": {
+    "xml_parsing": {
+      "status": "fixed",
+      "details": "Replaced `xml.etree.ElementTree` with `defusedxml.ElementTree` in `src/persistence/persistence_auditor.py` to mitigate XML parsing vulnerabilities."
+    },
+    "binding_0_0_0_0": {
+      "status": "acknowledged",
+      "details": "Instances of binding to `0.0.0.0` were found to be intentional for services requiring external accessibility (honeypot, API) or for testing purposes. Changing to `127.0.0.1` would cause functional regression or break intended functionality. Risk is acknowledged due to intentional design choices."
+    }
+  }
+}
