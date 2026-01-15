@@ -14,10 +14,18 @@ spec:
       labels:
         app: honeypot
     spec:
+      securityContext:
+        runAsNonRoot: true
+        # runAsUser: 1000 # Assuming appuser UID is 1000. If known, specify: runAsUser: <appuser_uid>
+        # fsGroup: 1000 # If needed for volume permissions. Assuming appgroup GID is 1000.
       containers:
       - name: honeypot
         image: honeypot:latest # This image needs to be built and pushed to a registry, or locally available
         imagePullPolicy: Never # For local development
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         ports:
         - containerPort: 8053 # DNS
           protocol: UDP
