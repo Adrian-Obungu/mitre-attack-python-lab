@@ -55,3 +55,17 @@ package-lock.json
 test-report.xml
 .gemini/
 gha-creds-*.json
+
+# Security databases
+*.db
+*.sqlite
+*.db-journal
+
+# Uploaded files
+uploads/
+
+# Large binaries and tools
+tools/
+*.exe
+*.tar.gz
+*.zip

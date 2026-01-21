@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        header { background-color: #fff; padding: 20px; border-bottom: 1px solid #ddd; text-align: center; }
+        h1 { margin: 0; font-size: 24px; }
+        main { padding: 20px; }
+        .metrics { display: flex; gap: 20px; justify-content: center; }
+        .metric { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .metric h2 { margin: 0; font-size: 16px; color: #555; }
+        .metric .value { font-size: 36px; font-weight: bold; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MITRE ATT&CK Lab Dashboard</h1>
+    </header>
+    <main>
+        <div class="metrics">
+            <div class="metric">
+                <h2>Techniques Implemented</h2>
+                <div id="techniques-implemented" class="value">-</div>
+            </div>
+            <div class="metric">
+                <h2>Total Findings</h2>
+                <div id="total-findings" class="value">-</div>
+            </div>
+            <div class="metric">
+                <h2>API Status</h2>
+                <div id="api-status" class="value">-</div>
+            </div>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // NOTE: In a real app, you would not hardcode the API key.
+            // This is for demonstration purposes only.
+            const apiKey = 'demo-key-2024'; 
+
+            fetch('/dashboard/api/metrics', {
+                headers: {
+                    'X-API-Key': apiKey
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('techniques-implemented').textContent = data.techniques_implemented;
+                document.getElementById('total-findings').textContent = data.total_findings;
+                document.getElementById('api-status').textContent = data.api_status;
+            })
+            .catch(error => {
+                console.error('Error fetching metrics:', error);
+                document.getElementById('api-status').textContent = 'Error';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+- technique_id: T1070
+  threshold: 2
+  severity: MEDIUM
+  channels: [slack, logfile]
+  cooldown_seconds: 3600
+
+- technique_id: T1112
+  threshold: 1
+  severity: HIGH
+  channels: [slack, webhook]
+  cooldown_seconds: 1800
+
+- technique_id: default
+  threshold: 5
+  severity: LOW
+  channels: [logfile]
+  cooldown_seconds: 86400
