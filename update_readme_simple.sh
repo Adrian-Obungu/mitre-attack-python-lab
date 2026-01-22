@@ -1,3 +1,16 @@
+#!/bin/bash
+
+echo "=== UPDATING README.MD ==="
+echo ""
+
+# Backup current README
+if [ -f "README.md" ]; then
+    cp README.md README.md.backup
+    echo "✅ Created backup: README.md.backup"
+fi
+
+# Create new README with simple badges and content
+cat > README.md << 'README_CONTENT'
 [![MITRE ATT&CK](https://img.shields.io/badge/MITRE-ATT&CK-red)](https://attack.mitre.org/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -186,3 +199,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built for the security community**
+README_CONTENT
+
+echo "✅ README.md updated successfully"
+echo ""
+echo "To commit this change:"
+echo "git add README.md"
+echo 'git commit -m "docs: Update README with badges and comprehensive documentation"'
+echo "git push origin main"
