@@ -6,7 +6,7 @@ scapy>=2.6.2
 psutil==5.9.6
 python-multipart==0.0.21
 aiofiles==23.2.1
-python-dotenv==1.0.0
+python-dotenv==1.2.1
 dnspython==2.8.0
 urllib3>=2.6.0
 pywin32==311; sys_platform == 'win32'
