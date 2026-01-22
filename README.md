@@ -1,6 +1,8 @@
 [![MITRE ATT&CK](https://img.shields.io/badge/MITRE-ATT&CK-red)](https://attack.mitre.org/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/Adrian-Obungu/mitre-attack-python-lab)](https://github.com/Adrian-Obungu/mitre-attack-python-lab/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Adrian-Obungu/mitre-attack-python-lab)](https://github.com/Adrian-Obungu/mitre-attack-python-lab/network/members)
 
 # MITRE ATT&CK Detection Lab
 
@@ -45,7 +47,7 @@ The MITRE ATT&CK Detection Lab is a modular Python framework for implementing, t
 ## Quick Start
 
 ### Installation
-\`\`\`bash
+```bash
 # Clone repository
 git clone https://github.com/Adrian-Obungu/mitre-attack-python-lab.git
 cd mitre-attack-python-lab
@@ -54,17 +56,17 @@ cd mitre-attack-python-lab
 python -m venv venv
 
 # Activate (Windows)
-venv\\Scripts\\activate
+venv\Scripts\activate
 
 # Activate (Mac/Linux)
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### Basic Usage
-\`\`\`bash
+```bash
 # Run the API server
 python src/api/main.py
 
@@ -76,17 +78,17 @@ print(f'Detection result: {result}')"
 
 # Run tests
 pytest tests/
-\`\`\`
+```
 
 ### Docker
-\`\`\`bash
+```bash
 # Build and run with Docker
 docker build -t mitre-attack-lab .
 docker run -p 8000:8000 mitre-attack-lab
-\`\`\`
+```
 
 ## Project Structure
-\`\`\`
+```
 mitre-attack-python-lab/
 ├── src/                    # Source code
 │   ├── api/               # FastAPI application
@@ -101,7 +103,7 @@ mitre-attack-python-lab/
 ├── scripts/               # Utility scripts
 ├── templates/             # Web dashboard
 └── config/                # Configuration files
-\`\`\`
+```
 
 ## MITRE ATT&CK Coverage
 
@@ -130,7 +132,7 @@ mitre-attack-python-lab/
 4. Update documentation
 
 Example detector template:
-\`\`\`python
+```python
 class TXXXXDetector:
     """Detector for Technique Name (TXXXX)"""
     
@@ -143,10 +145,10 @@ class TXXXXDetector:
         """Analyze data for technique indicators"""
         # Your detection logic here
         pass
-\`\`\`
+```
 
 ### Testing
-\`\`\`bash
+```bash
 # Run all tests
 pytest
 
@@ -156,7 +158,7 @@ pytest tests/discovery/
 
 # With coverage report
 pytest --cov=src tests/
-\`\`\`
+```
 
 ## Contributing
 
