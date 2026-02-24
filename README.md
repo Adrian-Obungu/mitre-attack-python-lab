@@ -6,43 +6,35 @@
 
 # MITRE ATT&CK Detection Lab
 
-A comprehensive educational and production-ready security detection framework built with Python.
+A robust, Python-based framework designed for advanced security detection engineering, threat emulation, and defensive posture validation against MITRE ATT&CK techniques.
 
 ## Overview
 
-The MITRE ATT&CK Detection Lab is a modular Python framework for implementing, testing, and learning about MITRE ATT&CK technique detection. It is designed for three audiences:
-
-1. **Security Beginners** - Learn detection engineering through hands-on code
-2. **Enthusiasts** - Build and customize your own detection system
-3. **Professionals** - Production-ready framework for enterprise detection
+The MITRE ATT&CK Detection Lab serves as a modular, extensible platform for developing, testing, and operationalizing detection logic aligned with the MITRE ATT&CK framework. It caters to a diverse audience, from security researchers and detection engineers seeking to deepen their understanding of adversary tactics to organizations aiming to enhance their threat detection capabilities and validate security controls.
 
 ## Features
 
-### Detection Capabilities
-- **7+ MITRE ATT&CK techniques** implemented across 3 tactics
-- **Defense Evasion (TA0005)**: T1027, T1070, T1112, T1140, T1197
-- **Discovery (TA0007)**: T1016, T1033, T1049, T1057, T1082, T1135
-- **Lateral Movement (TA0008)**: T1021, T1077, T1091
-- Modular detector architecture for easy expansion
+### Core Capabilities
+- **Comprehensive Technique Coverage:** Implements a growing suite of MITRE ATT&CK techniques across key tactics, including Defense Evasion (TA0005), Discovery (TA0007), and Privilege Escalation (TA0004), with specific techniques such as T1027, T1070, T1112, T1140, T1197, T1087, T1135, T1016, T1033, T1057, T1021, T1077, T1091, T1037, T1073.001, T1543.003, and T1053.005.
+- **Extensible Detector Architecture:** Features a modular design that facilitates the rapid development and integration of new detection modules, ensuring adaptability to evolving threat landscapes.
 
-### Architecture
-- **Modular Python classes** for each MITRE technique
-- **SQLite state management** with historical tracking
-- **Configurable alerting engine** with test mode
-- **REST API** with authentication and RBAC
-- **Comprehensive test suite** with 15+ test files
+### Architectural Design
+- **Microservice-Oriented Detection:** Each MITRE ATT&CK technique is encapsulated within dedicated Python classes, promoting modularity and independent development.
+- **Persistent State Management:** Leverages SQLite for robust state management, enabling historical tracking of detection events and contextual data.
+- **Advanced Alerting Engine:** Incorporates a configurable alerting mechanism with a dedicated test mode, allowing for fine-tuned notification strategies.
+- **Secure RESTful API:** Provides a FastAPI-based REST API, secured with API key authentication, offering programmatic access to detection functionalities and facilitating integration into broader security ecosystems.
+- **Rigorous Testing Framework:** Supported by a comprehensive test suite, ensuring the reliability and accuracy of detection logic.
 
-### Educational Value
-- **Hands-on learning** through working code
-- **Clear documentation** and quick start guides
-- **MITRE ATT&CK mapping** with technique references
-- **Community contribution** guidelines
+### Strategic Value
+- **Empirical Detection Engineering:** Offers a practical environment for hands-on learning and experimentation with detection engineering principles.
+- **Threat Intelligence Alignment:** Directly maps implemented detections to MITRE ATT&CK techniques, providing clear references and enhancing threat intelligence integration.
+- **Community-Driven Development:** Encourages contributions and collaborative enhancement of detection capabilities.
 
-### Production Ready
-- **Docker support** for containerized deployment
-- **CI/CD pipeline** with GitHub Actions
-- **Type hints** and comprehensive docstrings
-- **SIEM integration** capabilities
+### Operational Readiness
+- **Containerized Deployment:** Includes Docker support for streamlined, portable deployment across various environments.
+- **Automated Quality Assurance:** Integrates a CI/CD pipeline with GitHub Actions to ensure code quality, consistency, and continuous validation.
+- **Code Quality and Maintainability:** Adheres to best practices with extensive type hints and comprehensive docstrings, promoting code readability and long-term maintainability.
+- **Seamless SIEM Integration:** Designed with capabilities for straightforward integration into Security Information and Event Management (SIEM) platforms, enabling centralized logging and alert correlation.
 
 ## Quick Start
 
