@@ -1,16 +1,22 @@
+
 """
 Privilege Escalation API Routes
-Provides endpoints for privilege escalation detection
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from src.api.models import PrivilegeScanRequest, PrivilegeScanResponse, PrivilegeFindingModel
 import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
 
-from src.privilege.privilege_auditor import PrivilegeAuditor
+from src.privilege.privilege_auditor import PrivilegeAuditor, PrivilegeFinding
 from src.api.security import verify_api_key
 
-from src.privilege import PrivilegeFinding
+
+
+logger = logging.getLogger(__name__)
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
 
 router = APIRouter(
     prefix="/privilege",
@@ -18,35 +24,34 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/scan", response_model=Dict[str, Any])
-async def scan_for_privilege_escalation(api_key: str = Depends(verify_api_key)):
-    """
-    Scan for privilege escalation vectors
-    
-    Returns:
-        List of privilege escalation detections with MITRE technique mappings
-    """
-    try:
-        auditor = PrivilegeAuditor()
-        report = auditor.run_all_checks()
-        return report
-    except Exception as e:
-        logging.error(f"Privilege scan failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/health")
 async def privilege_health():
-    """Health check for privilege escalation module"""
-    return {"status": "healthy", "module": "privilege_escalation"}
+    return {"status": "healthy", "module": "privilege"}
 
-@router.get("/techniques")
-async def get_techniques():
-    """Get MITRE techniques covered by this module"""
-    return {
-        "techniques": [
-            "T1037 - Boot or Logon Initialization Scripts",
-            "T1548.002 - Bypass User Account Control",
-            "T1053.005 - Scheduled Task",
-            "T1543.003 - Windows Service"
-        ]
-    }
+@router.post("/scan", response_model=PrivilegeScanResponse)
+async def scan_privilege(
+    request: PrivilegeScanRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Scans for common privilege escalation vectors on the system.
+
+    **MITRE ATT&CK Techniques:**
+    - T1037: Logon Scripts
+    - T1073.001: DLL Side-Loading: Python Path Hijacking
+    - T1543.003: Create or Modify System Process: Windows Service
+    - T1053.005: Scheduled Task/Job: Scheduled Task
+
+    Returns:
+        List[PrivilegeFinding]: A list of detected privilege escalation findings.
+    """
+    logger.info("Received privilege scan request")
+    try:
+        auditor = PrivilegeAuditor()
+        report = auditor.scan()
+        # Convert PrivilegeFinding dataclass instances to PrivilegeFindingModel Pydantic instances
+        pydantic_report = [PrivilegeFindingModel(**finding.__dict__) for finding in report]
+        return PrivilegeScanResponse(report=pydantic_report)
+    except Exception as e:
+        logger.error(f"Privilege scan failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Privilege scan failed: {e}")

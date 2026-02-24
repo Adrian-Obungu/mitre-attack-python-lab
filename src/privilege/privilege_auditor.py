@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 import json
 import argparse
 import subprocess # Added for scheduled tasks and UAC bypass checks
@@ -25,27 +24,19 @@ try:
     import winreg
 except ImportError:
     winreg = None
-# Setup basic logging for the module
-# This will be overridden by structured JSON logging in main application
-import logging
-logger = logging.getLogger(__name__)
-if not logger.handlers:
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
+import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
+
+logger = logging.getLogger(__name__)
+
+# Ensure logging is set up only once, and in JSON format if not already configured
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
+
+if winreg is None:
     logger.warning("winreg module not available. Registry-based checks might be limited on this system.")
 
-# Setup basic logging for the module
-# This will be overridden by structured JSON logging in main application
-if not logger.handlers:
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 @dataclass
 class PrivilegeFinding:
@@ -101,15 +92,6 @@ class PrivilegeAuditor:
             
         return findings
 
-    def _setup_logging(self):
-        """Sets up structured JSON logging for the auditor."""
-        # Check if already configured by a parent (e.g., API server)
-        if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
-            logger.handlers.clear()
-            console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setFormatter(JsonFormatter())
-            logger.addHandler(console_handler)
-            logger.setLevel(logging.INFO) # Default level
 
     def _load_allowlist(self, path: str) -> Dict[str, Any]:
         """Loads the allowlist from a JSON file."""

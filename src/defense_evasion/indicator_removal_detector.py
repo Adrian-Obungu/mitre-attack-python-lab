@@ -1,5 +1,6 @@
 import os
 import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
 import time
 from pathlib import Path
 from typing import Dict, List, Any
@@ -7,8 +8,9 @@ from typing import Dict, List, Any
 # Assuming state_manager is in src/core
 from src.core.state_manager import SecurityStateManager
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
 
 class T1070IndicatorRemovalDetector:
     """

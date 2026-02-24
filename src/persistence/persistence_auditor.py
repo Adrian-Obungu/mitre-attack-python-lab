@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
 import platform
 import subprocess
 import re
@@ -19,7 +20,8 @@ else:
 logger = logging.getLogger(__name__)
 # Ensure logger is configured to output JSON if that's the project standard,
 # or at least a structured format. For now, use basic config.
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
 
 class PersistenceAuditor:
     """

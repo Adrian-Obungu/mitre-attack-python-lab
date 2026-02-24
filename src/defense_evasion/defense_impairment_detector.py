@@ -1,12 +1,13 @@
 import platform
 import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
 import psutil
 import os
 import hashlib
 from typing import Dict, List, Any
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
 
 class T1562DefenseImpairmentDetector:
     """

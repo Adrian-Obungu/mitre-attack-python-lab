@@ -6,14 +6,15 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 import logging
+from src.utils.logging_config import setup_logging
 from typing import List
 
 # Import route modules
-from .routes import recon_routes, persistence_routes, privilege_routes
+from .routes import recon_routes, persistence_routes, privilege_routes, defense_evasion_routes, discovery_routes
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+setup_logging(level=logging.INFO, json_format=True)
+logger = logging.getLogger("fastapi_app")
 
 from .security import verify_api_key
 
@@ -37,6 +38,8 @@ app.add_middleware(
 app.include_router(recon_routes.router)
 app.include_router(persistence_routes.router)
 app.include_router(privilege_routes.router)
+app.include_router(defense_evasion_routes.router)
+app.include_router(discovery_routes.router)
 
 @app.get("/")
 async def root():

@@ -14,6 +14,7 @@ MITRE ATT&CK Mapping:
 
 import argparse
 import logging
+from src.utils.logging_config import setup_logging, JsonFormatter
 import random
 import sys
 import os
@@ -27,9 +28,13 @@ from scapy.all import IP, TCP, sr1, conf
 from dns import resolver, exception
 
 # --- Configuration ---
-LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, handlers=[logging.FileHandler("port_scan_enhanced.log"), logging.StreamHandler()])
 logger = logging.getLogger(__name__)
+if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+    setup_logging(level=logging.INFO, json_format=True)
+# For PortScan_Enhanced, we might still want a file handler in addition to stdout
+file_handler = logging.FileHandler("port_scan_enhanced.log")
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+logger.addHandler(file_handler)
 
 # Suppress scapy's verbose output
 conf.verb = 0
