@@ -9,6 +9,13 @@ from datetime import datetime
 from src.api.security.auth import requires_permission
 from src.api.security.rbac import Permission
 
+# Detector imports
+from src.defense_evasion.obfuscation_detector import T1027ObfuscationDetector
+from src.defense_evasion.indicator_removal_detector import T1070IndicatorRemovalDetector
+from src.defense_evasion.registry_monitor import T1112RegistryMonitor
+from src.defense_evasion.defense_impairment_detector import T1562DefenseImpairmentDetector
+from src.defense_evasion.elevation_detector import T1548ElevationDetector
+
 # --- Pydantic Models ---
 
 class BaseScanRequest(BaseModel):

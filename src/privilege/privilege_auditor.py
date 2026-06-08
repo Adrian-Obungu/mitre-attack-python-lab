@@ -59,7 +59,9 @@ class PrivilegeAuditor:
     def __init__(self, allowlist_path: str = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'privilege_allowlist.json')):
         self.allowlist = self._load_allowlist(allowlist_path)
         self.findings: List[PrivilegeFinding] = []
-        self._setup_logging()
+        # Ensure JSON logging is configured for this class
+        if not any(isinstance(h, JsonFormatter) for h in logger.handlers):
+            setup_logging(level=logging.INFO, json_format=True)
         self.path_hijack_detector = PathHijackDetector()
         self.service_scanner = ServiceScanner()
 
@@ -165,13 +167,12 @@ class PrivilegeAuditor:
     def detect_python_path_hijacking(self) -> List[PrivilegeFinding]:
         """
         Detects potential Python Path Hijacking (T1073.001) vulnerabilities.
+
+        Note: PATH hijacking is cross-platform; the underlying PathHijackDetector
+        handles any OS-specific logic internally.
         """
         findings = []
         logger.info("Detecting Python Path Hijacking...")
-        if not self._is_windows():
-            logger.info("Skipping Python Path Hijacking check: Not on Windows.")
-            return findings
-        
         path_findings = self.path_hijack_detector.run_all_checks()
         for pf in path_findings:
             risk = "HIGH" if pf["is_writable"] and pf["position"] < 5 else "MEDIUM" # Heuristic for risk
@@ -189,13 +190,11 @@ class PrivilegeAuditor:
     def detect_service_misconfigurations(self) -> List[PrivilegeFinding]:
         """
         Detects Windows Service Misconfigurations (T1543.003).
+
+        Note: The underlying ServiceScanner handles OS-specific logic internally.
         """
         findings = []
         logger.info("Detecting Windows Service Misconfigurations...")
-        if not self._is_windows():
-            logger.info("Skipping Windows Service Misconfigurations check: Not on Windows.")
-            return findings
-
         service_findings = self.service_scanner.run_all_checks()
         for sf in service_findings:
             findings.append(PrivilegeFinding(

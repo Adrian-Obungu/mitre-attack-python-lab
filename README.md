@@ -59,14 +59,17 @@ pip install -r requirements.txt
 
 ### Basic Usage
 ```bash
-# Run the API server
-python src/api/main.py
+# Run the API server (must be run from the project root)
+python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
 
-# Test a detector directly
-python -c "from src.defense_evasion.obfuscation_detector import T1027ObfuscationDetector
+# Test a detector directly (run from the project root)
+python -c "
+from src.defense_evasion.obfuscation_detector import T1027ObfuscationDetector
 detector = T1027ObfuscationDetector()
+# Pass a real file path for full entropy analysis, or a process name for a metadata-only check
 result = detector.analyze({'process_name': 'test.exe'})
-print(f'Detection result: {result}')"
+print(f'Detection result: {result}')
+"
 
 # Run tests
 pytest tests/
@@ -77,6 +80,10 @@ pytest tests/
 # Build and run with Docker
 docker build -t mitre-attack-lab .
 docker run -p 8000:8000 mitre-attack-lab
+
+# Linux / Kali: if you see a Docker permission error, add your user to the docker group
+# (log out and back in, or start a new shell, after running this)
+sudo usermod -aG docker $USER
 ```
 
 ## Project Structure

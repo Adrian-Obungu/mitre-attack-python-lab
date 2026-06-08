@@ -13,7 +13,7 @@ def test_detector_initialization(detector):
     assert detector is not None
     assert detector.platform == platform.system()
 
-@patch('psutil.win_service_get')
+@patch('psutil.win_service_get', create=True)
 def test_check_security_services_windows_running(mock_win_service_get, detector):
     if platform.system() != "Windows":
         pytest.skip("Windows-specific test")
@@ -25,7 +25,7 @@ def test_check_security_services_windows_running(mock_win_service_get, detector)
     stopped = detector.check_security_services()
     assert len(stopped) == 0
 
-@patch('psutil.win_service_get')
+@patch('psutil.win_service_get', create=True)
 def test_check_security_services_windows_stopped(mock_win_service_get, detector):
     if platform.system() != "Windows":
         pytest.skip("Windows-specific test")
@@ -84,7 +84,7 @@ def test_check_security_services_unsupported_os(detector):
     stopped = detector.check_security_services()
     assert len(stopped) == 0
 
-@patch('psutil.win_service_get', side_effect=psutil.NoSuchProcess(pid=123, name='test'))
+@patch('psutil.win_service_get', create=True, side_effect=psutil.NoSuchProcess(pid=123, name='test'))
 def test_check_security_services_no_such_process(mock_win_service_get, detector):
     if platform.system() != "Windows":
         pytest.skip("Windows-specific test")
@@ -117,7 +117,7 @@ def test_get_linux_service_status_exception(mock_os_system, detector):
     status = detector._get_linux_service_status("test")
     assert status is None
 
-@patch('psutil.win_service_get', side_effect=Exception("Generic Error"))
+@patch('psutil.win_service_get', create=True, side_effect=Exception("Generic Error"))
 def test_check_security_services_windows_exception(mock_win_service_get, detector):
     if platform.system() != "Windows":
         pytest.skip("Windows-specific test")

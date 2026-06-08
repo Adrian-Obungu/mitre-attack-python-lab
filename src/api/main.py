@@ -1,5 +1,8 @@
 """
 FastAPI application for MITRE ATT&CK Python Lab
+
+Run from the project root with:
+    python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
 """
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -9,13 +12,13 @@ import logging
 from src.utils.logging_config import setup_logging
 from typing import List
 
-# Import route modules
-from .routes import recon_routes, persistence_routes, privilege_routes, defense_evasion_routes, discovery_routes
-
-# Setup logging
+# Setup logging before importing route modules so their loggers inherit the config
 setup_logging(level=logging.INFO, json_format=True)
 logger = logging.getLogger("fastapi_app")
 
+# Import route modules
+from .routes import recon_routes, persistence_routes, privilege_routes, defense_evasion_routes, discovery_routes
+from .routers import defense_evasion as defense_evasion_v1
 from .security import verify_api_key
 
 # Create FastAPI app
@@ -40,6 +43,8 @@ app.include_router(persistence_routes.router)
 app.include_router(privilege_routes.router)
 app.include_router(defense_evasion_routes.router)
 app.include_router(discovery_routes.router)
+# v1 versioned routers — expose /api/v1/analyze/* endpoints
+app.include_router(defense_evasion_v1.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
@@ -63,4 +68,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # Use the module string so reload and worker flags work correctly.
+    uvicorn.run("src.api.main:app", host="127.0.0.1", port=8000)

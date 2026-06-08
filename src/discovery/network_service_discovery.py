@@ -273,6 +273,7 @@ class T1046NetworkServiceDiscovery:
             results["local_services"] = self._get_local_services_linux()
         else:
             results["status"] = "skipped"
+            results["message"] = f"Unsupported platform: {self.platform}"
 
         if network_scan:
             open_ports = self._scan_network_ports(self.allowed_scan_ranges, self.max_ports_per_scan)

@@ -42,9 +42,7 @@ class T1069PermissionGroupsDiscovery:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                check=False,
-                encoding='utf-8',
-                errors='ignore'
+                check=False
             )
             if result.returncode != 0:
                 logger.debug(f"Command '{' '.join(command)}' exited with error {result.returncode}: {result.stderr.strip()}")
@@ -258,6 +256,60 @@ class T1069PermissionGroupsDiscovery:
                 })
         return local_groups
 
+    # Privileged group names used for cross-platform detection
+    PRIVILEGED_GROUP_NAMES = {
+        "Administrators", "BUILTIN\\Administrators", "sudo", "wheel", "root",
+        "admin", "Domain Admins", "Enterprise Admins",
+    }
+
+    def _get_current_user_groups_windows(self) -> Dict[str, List[str]]:
+        """
+        Returns the current user's group memberships on Windows using ``whoami /groups``.
+
+        Returns a dict of ``{username: [group_name, ...]}``.  The username is
+        obtained from ``os.getlogin()`` with a fallback to the ``USERNAME``
+        environment variable.
+        """
+        try:
+            username = os.getlogin()
+        except OSError:
+            username = os.environ.get("USERNAME", os.environ.get("USER", "unknown"))
+        output = self._run_command(["whoami", "/groups"], timeout=self.enumeration_timeout)
+        groups: List[str] = []
+        in_group_section = False
+        for line in output:
+            line = line.strip()
+            if "===" in line:
+                in_group_section = True
+                continue
+            if not in_group_section:
+                continue
+            if not line or "The command completed successfully" in line:
+                continue
+            # The first token on each data line is the group name
+            group_name = line.split("  ")[0].strip()
+            if group_name:
+                groups.append(group_name)
+        return {username: groups}
+
+    def _get_current_user_groups_unix(self) -> Dict[str, List[str]]:
+        """
+        Returns the current user's group memberships on Linux/macOS using ``id -Gn``.
+
+        Returns a dict of ``{username: [group_name, ...]}``.  The username is
+        obtained from ``os.getlogin()`` with a fallback to the ``USER``
+        environment variable.
+        """
+        try:
+            username = os.getlogin()
+        except OSError:
+            username = os.environ.get("USER", os.environ.get("USERNAME", "unknown"))
+        output = self._run_command(["id", "-Gn"], timeout=self.enumeration_timeout)
+        groups: List[str] = []
+        if output:
+            groups = output[0].strip().split()
+        return {username: groups}
+
     def run_checks(self, include_domain: bool = False, identify_service_accounts: bool = False) -> Dict[str, Any]:
         """
         Runs all permission group discovery checks.
@@ -276,7 +328,9 @@ class T1069PermissionGroupsDiscovery:
             "domain_groups": [],
             "platform_groups": {},
             "service_accounts": [],
-            "status": "success"
+            "user_memberships": {},
+            "privileged_groups": [],
+            "status": "success",
         }
 
         # Platform-specific group enumeration
@@ -285,6 +339,25 @@ class T1069PermissionGroupsDiscovery:
             results["local_groups"] = results["platform_groups"]["groups"]
         else:
             results["local_groups"] = self._get_groups_method()
+
+        # Current-user membership
+        try:
+            if self.platform == "Windows":
+                results["user_memberships"] = self._get_current_user_groups_windows()
+            else:
+                results["user_memberships"] = self._get_current_user_groups_unix()
+        except Exception as exc:
+            logger.warning(f"Could not determine current user groups: {exc}")
+
+        # Privileged group detection — combine local group names with user membership groups
+        local_group_names = {g["name"] for g in results["local_groups"]}
+        user_group_names: set = set()
+        for groups in results["user_memberships"].values():
+            user_group_names.update(groups)
+        all_seen_groups = local_group_names | user_group_names
+        results["privileged_groups"] = [
+            g for g in all_seen_groups if g in self.PRIVILEGED_GROUP_NAMES
+        ]
 
         # Domain enumeration
         if include_domain:
@@ -300,7 +373,7 @@ class T1069PermissionGroupsDiscovery:
 
         end_time = time.perf_counter()
         results["execution_time"] = f"{end_time - start_time:.4f} seconds"
-        
+
         self.cache[cache_key] = {'timestamp': time.time(), 'data': results}
         logger.info(f"T1069 checks completed in {results['execution_time']}")
         return results

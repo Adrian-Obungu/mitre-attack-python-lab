@@ -3,7 +3,9 @@ from fastapi.testclient import TestClient
 from src.api.main import app
 import platform
 
-client = TestClient(app)
+# The routers/defense_evasion.py endpoints require an API key.
+# The default key from auth.py is os.getenv("API_KEY", "test_api_key").
+client = TestClient(app, headers={"X-API-Key": "test_api_key"})
 
 def test_read_main():
     response = client.get("/")

@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for MITRE ATT&CK Python Lab
 
 # Stage 1: Build stage
-FROM python:3.9-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
 # Stage 2: Runtime stage
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
