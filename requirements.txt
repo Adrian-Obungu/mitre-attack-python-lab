@@ -11,6 +11,25 @@ dnspython==2.8.0
 urllib3>=2.6.0
 pywin32==311; sys_platform == 'win32'
 
+# DNS / Honeypot
+dnslib>=0.9.19
+
+# Metrics / Observability
+prometheus_client>=0.19.0
+
+# Utilities
+rich>=13.0.0
+colorama>=0.4.6
+tabulate>=0.9.0
+
 # Testing
 pytest>=7.0.0
 pytest-cov>=4.0.0
+httpx>=0.25.1
+
+# Dev / Lint (optional but checked by test_suite.py)
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.6.0
+bandit>=1.7.5
+memory-profiler>=0.61.0

@@ -14,11 +14,11 @@ class T1078ValidAccountsDetector:
     behavior patterns, mapping to MITRE ATT&CK Technique T1078.
     """
 
-    def __init__(self, state_manager: SecurityStateManager):
+    def __init__(self, state_manager: Optional[SecurityStateManager] = None):
         """
-        Initializes the T1078ValidAccountsDetector with a state manager.
+        Initializes the T1078ValidAccountsDetector with an optional state manager.
         """
-        self.state_manager = state_manager
+        self.state_manager = state_manager or SecurityStateManager()
         self.detector_name = self.__class__.__name__
         self.platform = platform.system()
         logger.info(f"{self.detector_name} initialized on {self.platform}.")

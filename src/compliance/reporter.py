@@ -25,6 +25,24 @@ class ComplianceReporter:
             'ISO_27001_2022': ['A.14.2.1'],
             'PCI_DSS_v4': ['6.5.1']
         },
+        'T1059': {
+            'NIST_800_53': ['SI-3', 'CM-7'],
+            'CIS_CSC_v8': ['CIS 2.5', 'CIS 10.1'],
+            'ISO_27001_2022': ['A.12.2.1'],
+            'PCI_DSS_v4': ['6.3.3']
+        },
+        'T1112': {
+            'NIST_800_53': ['CM-3', 'CM-6'],
+            'CIS_CSC_v8': ['CIS 4.1', 'CIS 4.2'],
+            'ISO_27001_2022': ['A.12.1.2'],
+            'PCI_DSS_v4': ['2.2.1']
+        },
+        'T1562': {
+            'NIST_800_53': ['AU-9', 'SI-4'],
+            'CIS_CSC_v8': ['CIS 8.2', 'CIS 13.1'],
+            'ISO_27001_2022': ['A.12.4.2'],
+            'PCI_DSS_v4': ['10.5.1']
+        },
         # Add more mappings as needed
     }
 
